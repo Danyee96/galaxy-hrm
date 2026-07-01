@@ -54,9 +54,9 @@ export interface BrandSettings {
 
 // Default brand settings
 export const DEFAULT_BRAND_SETTINGS: BrandSettings = {
-  logoDark: 'logo/logo-dark.png',
-  logoLight: 'logo/logo-light.png',
-  favicon: 'logo/favicon.png',
+  logoDark: '/images/logos/logo-dark.png',
+  logoLight: '/images/logos/logo-light.png',
+  favicon: '/images/logos/favicon.png',
   titleText: 'WorkDo',
   footerText: '© 2024 WorkDo. All rights reserved.',
   companyMobile: '',

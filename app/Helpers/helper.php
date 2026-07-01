@@ -926,9 +926,9 @@ if (!function_exists('defaultSettings')) {
             'landingPageEnabled' => true,
 
             // Brand Settings
-            'logoDark' => 'logo/logo-dark.png',
-            'logoLight' => 'logo/logo-light.png',
-            'favicon' => 'logo/favicon.png',
+            'logoDark' => '/images/logos/logo-dark.png',
+            'logoLight' => '/images/logos/logo-light.png',
+            'favicon' => '/images/logos/favicon.png',
             'titleText' => isSaas() ? 'HRM SaaS' : 'HRM',
             'footerText' => isSaas() ? '© 2026 HRM SaaS. All rights reserved.' : '© 2026 HRM. All rights reserved.',
             'themeColor' => 'green',

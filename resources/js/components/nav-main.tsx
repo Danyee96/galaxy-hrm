@@ -1,6 +1,6 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -153,13 +153,12 @@ export function NavMain({ items = [], position }: { items: NavItem[]; position: 
                                             <span>{child.title}</span>
                                         </a>
                                     ) : (
-                                        <Link
+                                        <a
                                             href={child.href || '#'}
-                                            prefetch
                                             className={`flex items-center gap-2 ${effectivePosition === 'right' ? 'justify-end text-right' : 'justify-start text-left'}`}
                                         >
                                             <span>{child.title}</span>
-                                        </Link>
+                                        </a>
                                     )}
                                 </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -241,9 +240,8 @@ export function NavMain({ items = [], position }: { items: NavItem[]; position: 
                                             )}
                                         </a>
                                     ) : (
-                                        <Link
+                                        <a
                                             href={item.href || '#'}
-                                            prefetch
                                             className={`flex items-center gap-2 ${effectivePosition === 'right' ? 'justify-end text-right' : 'justify-start text-left'}`}
                                         >
                                             {effectivePosition === 'right' ? (
@@ -257,7 +255,7 @@ export function NavMain({ items = [], position }: { items: NavItem[]; position: 
                                                     {state !== "collapsed" && <span>{item.title}</span>}
                                                 </>
                                             )}
-                                        </Link>
+                                        </a>
                                     )}
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

@@ -6,7 +6,7 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { useSidebarSettings } from '@/contexts/SidebarContext';
 import { useBrand } from '@/contexts/BrandContext';
 import { type NavItem } from '@/types';
-import { Link, usePage, router } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, ShoppingBag, Users, Tag, FileIcon, Settings, BarChart, Barcode, FileText, Briefcase, CheckSquare, Calendar, CreditCard, Ticket, Gift, DollarSign, MessageSquare, CalendarDays, Palette, Image, Mail, Mail as VCard, ChevronDown, Building2, Globe, Clock, Timer, Coins, Fingerprint } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,17 @@ import { toast } from '@/components/custom-toast';
 import { getImagePath } from '@/utils/helpers';
 import { getCompanyId } from '@/utils/helpers';
 
+const DEFAULT_LOGO = '/images/logos/galaxy-logo-white.png';
+const DEFAULT_FAVICON = '/images/logos/favicon.png';
+
+const resolveSidebarImage = (path?: string, fallback = '') => {
+    if (!path) return fallback;
+    if (path.startsWith('http') || path.startsWith('/images/') || path.startsWith('/build/') || path.startsWith('/storage/')) {
+        return path;
+    }
+
+    return getImagePath(path) || fallback;
+};
 
 export function AppSidebar() {
     const { t, i18n } = useTranslation();
@@ -1095,25 +1106,26 @@ export function AppSidebar() {
         >
             <SidebarHeader className={style !== 'plain' ? 'sidebar-styled' : ''} style={sidebarStyle}>
                 <div className="flex justify-center items-center p-2">
-                    <Link href={getFirstAvailableHref()} prefetch className="flex items-center justify-center">
+                    <a href={getFirstAvailableHref()} className="flex items-center justify-center">
                         {/* Logo for expanded sidebar */}
                         <div className="group-data-[collapsible=icon]:hidden flex items-center">
                             {(() => {
                                 const currentLogo = logoLight || logoDark;
-                                const displayUrl = getImagePath(currentLogo) ?? currentLogo;
+                                const displayUrl = resolveSidebarImage(currentLogo, DEFAULT_LOGO);
 
-                                return displayUrl ? (
-                                    <img
-                                        key={`${currentLogo}-${Date.now()}`}
-                                        src={displayUrl}
-                                        alt="Logo"
-                                        className="h-14 w-auto max-w-[220px] object-contain transition-all duration-200"
-                                        onError={() => updateBrandSettings({ logoLight: '' })}
-                                    />
-                                ) : (
-                                    <div className="h-12 text-inherit font-semibold flex items-center text-lg tracking-tight">
-                                        WorkDo
-                                    </div>
+                                return (
+                                  <img
+                                      src={displayUrl}
+                                      alt="Logo"
+                                      className="h-14 w-auto max-w-[220px] object-contain transition-all duration-200"
+                                      onError={(event) => {
+                                          const image = event.currentTarget;
+                                          if (image.src !== `${window.location.origin}${DEFAULT_LOGO}`) {
+                                              image.src = DEFAULT_LOGO;
+                                          }
+                                          updateBrandSettings({ logoLight: '', logoDark: '' });
+                                      }}
+                                  />
                                 );
                             })()}
                         </div>
@@ -1121,24 +1133,25 @@ export function AppSidebar() {
                         {/* Icon for collapsed sidebar */}
                         <div className="h-8 w-8 hidden group-data-[collapsible=icon]:block">
                             {(() => {
-                                const displayFavicon = favicon ? getImagePath(favicon) : '';
+                                const displayFavicon = resolveSidebarImage(favicon, DEFAULT_FAVICON);
 
-                                return displayFavicon ? (
-                                    <img
-                                        key={`${favicon}-${Date.now()}`}
-                                        src={displayFavicon}
-                                        alt="Icon"
-                                        className="h-8 w-8 rounded-md object-contain transition-all duration-200"
-                                        onError={() => updateBrandSettings({ favicon: '' })}
-                                    />
-                                ) : (
-                                    <div className="h-8 w-8 bg-primary text-white rounded flex items-center justify-center font-bold shadow-sm">
-                                        W
-                                    </div>
+                                return (
+                                  <img
+                                      src={displayFavicon}
+                                      alt="Icon"
+                                      className="h-8 w-8 rounded-md object-contain transition-all duration-200"
+                                      onError={(event) => {
+                                          const image = event.currentTarget;
+                                          if (image.src !== `${window.location.origin}${DEFAULT_FAVICON}`) {
+                                              image.src = DEFAULT_FAVICON;
+                                          }
+                                          updateBrandSettings({ favicon: '' });
+                                      }}
+                                  />
                                 );
                             })()}
                         </div>
-                    </Link>
+                    </a>
                 </div>
 
                 {/* Business Switcher removed */}
