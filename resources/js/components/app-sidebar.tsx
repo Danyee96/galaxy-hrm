@@ -1064,8 +1064,12 @@ export function AppSidebar() {
 
     const { position, effectivePosition } = useLayout();
     const { variant, collapsible, style } = useSidebarSettings();
-    const { logoLight, logoDark, favicon, updateBrandSettings } = useBrand();
+    const { logoLight, logoDark, favicon, titleText, updateBrandSettings } = useBrand();
     const [sidebarStyle, setSidebarStyle] = useState({});
+    const [logoSrc, setLogoSrc] = useState('');
+    const [faviconSrc, setFaviconSrc] = useState('');
+    const [logoFallbackUsed, setLogoFallbackUsed] = useState(false);
+    const [faviconFallbackUsed, setFaviconFallbackUsed] = useState(false);
 
     useEffect(() => {
 
@@ -1081,6 +1085,16 @@ export function AppSidebar() {
             setSidebarStyle({});
         }
     }, [style]);
+
+    useEffect(() => {
+        setLogoSrc(resolveSidebarImage(logoLight || logoDark, DEFAULT_LOGO));
+        setLogoFallbackUsed(false);
+    }, [logoLight, logoDark]);
+
+    useEffect(() => {
+        setFaviconSrc(resolveSidebarImage(favicon, DEFAULT_FAVICON));
+        setFaviconFallbackUsed(false);
+    }, [favicon]);
 
     const filteredNavItems = mainNavItems;
 
@@ -1109,47 +1123,54 @@ export function AppSidebar() {
                     <a href={getFirstAvailableHref()} className="flex items-center justify-center">
                         {/* Logo for expanded sidebar */}
                         <div className="group-data-[collapsible=icon]:hidden flex items-center">
-                            {(() => {
-                                const currentLogo = logoLight || logoDark;
-                                const displayUrl = resolveSidebarImage(currentLogo, DEFAULT_LOGO);
+                            {logoSrc ? (
+                                <img
+                                    src={logoSrc}
+                                    alt="Logo"
+                                    className="h-14 w-auto max-w-[220px] object-contain transition-all duration-200"
+                                    onError={() => {
+                                        updateBrandSettings({ logoLight: '', logoDark: '' });
 
-                                return (
-                                  <img
-                                      src={displayUrl}
-                                      alt="Logo"
-                                      className="h-14 w-auto max-w-[220px] object-contain transition-all duration-200"
-                                      onError={(event) => {
-                                          const image = event.currentTarget;
-                                          if (image.src !== `${window.location.origin}${DEFAULT_LOGO}`) {
-                                              image.src = DEFAULT_LOGO;
-                                          }
-                                          updateBrandSettings({ logoLight: '', logoDark: '' });
-                                      }}
-                                  />
-                                );
-                            })()}
+                                        if (!logoFallbackUsed && logoSrc !== DEFAULT_LOGO) {
+                                            setLogoFallbackUsed(true);
+                                            setLogoSrc(DEFAULT_LOGO);
+                                            return;
+                                        }
+
+                                        setLogoSrc('');
+                                    }}
+                                />
+                            ) : (
+                                <div className="flex h-14 max-w-[220px] items-center text-center text-xl font-bold tracking-normal text-white">
+                                    {titleText || 'HRM'}
+                                </div>
+                            )}
                         </div>
 
                         {/* Icon for collapsed sidebar */}
                         <div className="h-8 w-8 hidden group-data-[collapsible=icon]:block">
-                            {(() => {
-                                const displayFavicon = resolveSidebarImage(favicon, DEFAULT_FAVICON);
+                            {faviconSrc ? (
+                                <img
+                                    src={faviconSrc}
+                                    alt="Icon"
+                                    className="h-8 w-8 rounded-md object-contain transition-all duration-200"
+                                    onError={() => {
+                                        updateBrandSettings({ favicon: '' });
 
-                                return (
-                                  <img
-                                      src={displayFavicon}
-                                      alt="Icon"
-                                      className="h-8 w-8 rounded-md object-contain transition-all duration-200"
-                                      onError={(event) => {
-                                          const image = event.currentTarget;
-                                          if (image.src !== `${window.location.origin}${DEFAULT_FAVICON}`) {
-                                              image.src = DEFAULT_FAVICON;
-                                          }
-                                          updateBrandSettings({ favicon: '' });
-                                      }}
-                                  />
-                                );
-                            })()}
+                                        if (!faviconFallbackUsed && faviconSrc !== DEFAULT_FAVICON) {
+                                            setFaviconFallbackUsed(true);
+                                            setFaviconSrc(DEFAULT_FAVICON);
+                                            return;
+                                        }
+
+                                        setFaviconSrc('');
+                                    }}
+                                />
+                            ) : (
+                                <div className="flex h-8 w-8 items-center justify-center rounded bg-white/20 text-sm font-bold text-white shadow-sm">
+                                    {(titleText || 'H').charAt(0).toUpperCase()}
+                                </div>
+                            )}
                         </div>
                     </a>
                 </div>

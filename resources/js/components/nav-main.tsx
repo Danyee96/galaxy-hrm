@@ -60,7 +60,7 @@ export function NavMain({ items = [], position }: { items: NavItem[]; position: 
         } catch (e) {
             console.error('Error saving navigation state:', e);
         }
-    }, [page.url, items]); // Re-run when URL changes or items change
+    }, [page.url]); // Re-run only when URL changes so manual dropdown state is not immediately reset.
     
     // Helper function to check nested children for active items
     const checkNestedChildren = (
