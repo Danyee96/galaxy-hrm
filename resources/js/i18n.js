@@ -152,7 +152,7 @@ i18n
     loadOnInitialization: false
   });
 
-// Export the initialized instance
+// Export the initialized instance hello
 export default i18n;
 
 // Make sure the i18n instance is available for direct imports

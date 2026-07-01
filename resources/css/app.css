@@ -417,6 +417,16 @@ a:hover,
         background: transparent;
     }
 
+    @media (max-width: 640px) {
+        .crud-responsive-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        .crud-responsive-grid > * {
+            grid-column: span 1 !important;
+        }
+    }
+
     [data-slot="sidebar-inset"] > header {
         margin: 0.85rem 1rem 0;
         border: 1px solid var(--header-border);

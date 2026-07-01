@@ -581,10 +581,11 @@ export function CrudFormModal({
   const columns = formConfig.columns || 1;
 
   const modalId = `crud-modal-${mode}-${title.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
+  const fieldWidth = (width?: string) => width ? `min(100%, ${width})` : '100%';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`${getModalSizeClass()} flex max-h-[92vh] min-h-0 flex-col overflow-hidden`} modalId={modalId}>
+      <DialogContent className={`${getModalSizeClass()} flex max-h-[calc(100svh-1rem)] min-h-0 flex-col overflow-hidden sm:max-h-[92vh]`} modalId={modalId}>
         <DialogHeader className="shrink-0">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description || " "}</DialogDescription>
@@ -613,7 +614,7 @@ export function CrudFormModal({
               </div>
             )}
             {layout === 'grid' ? (
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: '1rem' }}>
+              <div className="crud-responsive-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: '1rem' }}>
                 {formConfig.fields.map((field) => {
                   if (field.conditional && !field.conditional(mode, formData)) {
                     return null;
@@ -649,7 +650,7 @@ export function CrudFormModal({
                       key={field.name}
                       className="space-y-2"
                       style={{
-                        width: field.width || "100%",
+                        width: fieldWidth(field.width),
                         flexGrow: field.width ? 0 : 1
                       }}
                     >
@@ -676,7 +677,7 @@ export function CrudFormModal({
                       <div
                         key={field.name}
                         className="space-y-2"
-                        style={{ width: field.width || "100%" }}
+                        style={{ width: fieldWidth(field.width) }}
                       >
                         <Label htmlFor={field.name} className="text-sm font-medium">
                           {field.label} {field.required && !(field.type === 'file' && mode === 'edit') && <span className="text-red-500">*</span>}
