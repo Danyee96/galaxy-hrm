@@ -287,6 +287,7 @@ class PayrollRun extends BaseModel
 
         $basicSalary = (float) $employeeSalary->basic_salary;
         $profileBonus = (float) ($payrollContext['profile_bonuses']->get($employee->id)?->amount ?? 0);
+        $isBonusOnlyPayroll = $basicSalary <= 0 && $profileBonus > 0;
         $deductionBase = $basicSalary > 0 ? $basicSalary : $profileBonus;
         $perDaySalary = $this->calculatePerDaySalary($basicSalary);
         $perDayDeductionBase = $this->calculatePerDaySalary($deductionBase);
@@ -301,8 +302,9 @@ class PayrollRun extends BaseModel
             $payrollContext['settings']
         );
 
-        $partialAttendanceRecords = $attendanceRecords
-            ->filter(fn ($record) => $workingDateLookup->has($record->date->toDateString()) && ! $record->is_holiday && (
+        $partialAttendanceRecords = $isBonusOnlyPayroll
+            ? collect()
+            : $attendanceRecords->filter(fn ($record) => $workingDateLookup->has($record->date->toDateString()) && ! $record->is_holiday && (
                 empty($record->clock_in) && ! empty($record->clock_out)
             ));
         $partialAttendanceDays = (int) $partialAttendanceRecords->count();
@@ -495,6 +497,7 @@ class PayrollRun extends BaseModel
             ->pluck('amount')
             ->first() ?? 0);
 
+        $isBonusOnlyPayroll = $basicSalary <= 0 && $profileBonus > 0;
         $deductionBase = $basicSalary > 0 ? $basicSalary : $profileBonus;
         $perDaySalary = $this->calculatePerDaySalary($basicSalary);
         $perDayDeductionBase = $this->calculatePerDaySalary($deductionBase);
@@ -505,8 +508,9 @@ class PayrollRun extends BaseModel
         $lateMinutes = (int) $lateRecords->sum('late_minutes');
         $latePenalty = $this->calculateLatePenalty($lateRecords, $deductionBase, $workingSchedule, $settings);
 
-        $partialAttendanceRecords = $attendanceRecords
-            ->filter(fn ($record) => $workingDateLookup->has($record->date->toDateString()) && ! $record->is_holiday && (
+        $partialAttendanceRecords = $isBonusOnlyPayroll
+            ? collect()
+            : $attendanceRecords->filter(fn ($record) => $workingDateLookup->has($record->date->toDateString()) && ! $record->is_holiday && (
                 empty($record->clock_in) && ! empty($record->clock_out)
             ));
         $partialAttendanceDays = (int) $partialAttendanceRecords->count();

@@ -1,4 +1,3 @@
-import { Head } from '@inertiajs/react';
 import { CreditCard, Users, Smartphone, QrCode } from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -56,7 +55,6 @@ export default function AuthLayout({
     const currentLogo = appearance === 'dark' ? logoLight : logoDark;
     const primaryColor = themeColor === 'custom' ? customColor : THEME_COLORS[themeColor as keyof typeof THEME_COLORS];
     const globalSettings = (window as any).page?.props?.globalSettings;
-    console.log('globalSettings',globalSettings);
     
     const isDemo = globalSettings?.is_demo || false;
     // const userLanguage = globalSettings?.defaultLanguage || 'en';

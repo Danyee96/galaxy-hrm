@@ -77,7 +77,7 @@ html[dir="rtl"] [data-sidebar="group-action"] {
 }
 
 /* Fix sidebar menu item with children for RTL */
-html[dir="rtl"] .group-has-data-[sidebar=menu-action]/menu-item:pr-8 {
+html[dir="rtl"] .group-has-data-\[sidebar\=menu-action\]\/menu-item\:pr-8 {
   padding-right: 0.5rem !important;
   padding-left: 2rem !important;
 }

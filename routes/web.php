@@ -83,7 +83,9 @@ use App\Http\Controllers\YooKassaPaymentController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', [LandingPageController::class, 'show'])->name('home');
+Route::get('/', function () {
+    return redirect()->route(auth()->check() ? 'dashboard.redirect' : 'login');
+})->name('home');
 
 // Public form submission routes
 

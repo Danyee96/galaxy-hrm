@@ -105,16 +105,6 @@ export function initPerformanceMonitoring() {
       perfObserver.observe({ type: 'first-input', buffered: true });
       perfObserver.observe({ type: 'layout-shift', buffered: true });
       
-      // Resource timing
-      const resourceObserver = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          if (entry.initiatorType === 'fetch' || entry.initiatorType === 'xmlhttprequest') {
-            console.log(`[API] ${entry.name}: ${entry.duration.toFixed(0)}ms`);
-          }
-        });
-      });
-      
-      resourceObserver.observe({ type: 'resource', buffered: true });
     } catch (e) {
       console.warn('Performance monitoring not fully supported', e);
     }

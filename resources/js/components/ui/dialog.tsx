@@ -6,11 +6,20 @@ import { cn } from "@/lib/utils"
 import { useModalStack } from "@/contexts/ModalStackContext"
 import { lockBodyScroll, unlockBodyScroll } from "@/utils/body-scroll-lock"
 
+const DialogOpenContext = React.createContext(false)
+
 const Dialog = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
->(({ onOpenChange, ...props }, ref) => {
+>(({ onOpenChange, open: openProp, defaultOpen = false, ...props }, ref) => {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
+  const isOpen = openProp ?? uncontrolledOpen
+
   const handleOpenChange = (open: boolean) => {
+    if (openProp === undefined) {
+      setUncontrolledOpen(open)
+    }
+
     // Only call onOpenChange for explicit close actions, not focus loss
     if (onOpenChange) {
       onOpenChange(open);
@@ -18,7 +27,15 @@ const Dialog = React.forwardRef<
   };
   
   return (
-     <DialogPrimitive.Root {...props} modal={false} onOpenChange={handleOpenChange} />
+    <DialogOpenContext.Provider value={isOpen}>
+      <DialogPrimitive.Root
+        {...props}
+        open={openProp}
+        defaultOpen={defaultOpen}
+        modal={false}
+        onOpenChange={handleOpenChange}
+      />
+    </DialogOpenContext.Provider>
   );
 })
 Dialog.displayName = "Dialog"
@@ -58,16 +75,20 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { modalId?: string }
 >(({ className, children, modalId, ...props }, ref) => {
   const { registerModal, unregisterModal, getZIndex, modalStack } = useModalStack();
+  const isOpen = React.useContext(DialogOpenContext);
   const [currentModalId] = React.useState(() => modalId || `modal-${Date.now()}-${Math.random()}`);
   
   React.useEffect(() => {
+    if (!isOpen) return;
+
     lockBodyScroll();
     registerModal(currentModalId);
+
     return () => {
       unregisterModal(currentModalId);
       unlockBodyScroll();
     };
-  }, [currentModalId, registerModal, unregisterModal]);
+  }, [currentModalId, isOpen, registerModal, unregisterModal]);
   
   const zIndex = getZIndex(currentModalId);
   

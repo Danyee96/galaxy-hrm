@@ -18,8 +18,6 @@ interface ReferralSettingsProps {
 export default function ReferralSettings({ settings, currencySymbol, globalSettings }: ReferralSettingsProps) {
   const { t } = useTranslation();
 
-  console.log('globalSettings ', globalSettings);
-
   const { data, setData, post, processing, errors } = useForm({
     is_enabled: settings.is_enabled,
     commission_percentage: settings.commission_percentage,

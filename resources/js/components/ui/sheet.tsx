@@ -5,8 +5,36 @@ import { XIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { lockBodyScroll, unlockBodyScroll } from "@/utils/body-scroll-lock"
 
-function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+const SheetOpenContext = React.createContext(false)
+
+function Sheet({
+  onOpenChange,
+  open: openProp,
+  defaultOpen = false,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Root>) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
+  const isOpen = openProp ?? uncontrolledOpen
+
+  const handleOpenChange = (open: boolean) => {
+    if (openProp === undefined) {
+      setUncontrolledOpen(open)
+    }
+
+    onOpenChange?.(open)
+  }
+
+  return (
+    <SheetOpenContext.Provider value={isOpen}>
+      <SheetPrimitive.Root
+        data-slot="sheet"
+        {...props}
+        open={openProp}
+        defaultOpen={defaultOpen}
+        onOpenChange={handleOpenChange}
+      />
+    </SheetOpenContext.Provider>
+  )
 }
 
 function SheetTrigger({
@@ -51,10 +79,14 @@ function SheetContent({
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
 }) {
+  const isOpen = React.useContext(SheetOpenContext)
+
   React.useEffect(() => {
+    if (!isOpen) return
+
     lockBodyScroll()
     return unlockBodyScroll
-  }, [])
+  }, [isOpen])
 
   return (
     <SheetPortal>
