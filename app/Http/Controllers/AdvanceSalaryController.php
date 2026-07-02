@@ -385,7 +385,7 @@ class AdvanceSalaryController extends Controller
                     'outstanding_amount' => (float) $advance->outstanding_amount,
                     'request_date' => $advance->request_date?->toDateString(),
                     'notes' => $advance->notes,
-                    'receipt_url' => URL::temporarySignedRoute('advance-salary-receipts.show', now()->addDays(7), $advance),
+                    'receipt_url' => URL::temporarySignedRoute('advance-salary-receipts.show', now()->addDays(7), $advance, false),
                     'status_label' => $advance->repayment_type === 'installment' ? 'Installment advance' : 'Advance taken',
                     'is_virtual_repayment' => false,
                 ]];

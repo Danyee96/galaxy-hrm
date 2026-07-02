@@ -195,6 +195,9 @@ export default function AdvanceSalaries() {
   };
 
   const buildAdvanceShareText = (employee: any, advance: any) => {
+    const receiptUrl = advance?.receipt_url
+      ? new URL(advance.receipt_url, window.location.origin).toString()
+      : '';
     const lines = [
       `Name: ${employee?.name || '-'}`,
       `Dept: ${employee?.department_name || '-'}`,
@@ -203,8 +206,8 @@ export default function AdvanceSalaries() {
       `Total advance taken this month: Rs ${formatReceiptMoney(employee?.advance_total)}`,
     ];
 
-    if (advance?.receipt_url) {
-      lines.push('', `Receipt: ${advance.receipt_url}`);
+    if (receiptUrl) {
+      lines.push('', `Receipt: ${receiptUrl}`);
     }
 
     return lines.join('\n');

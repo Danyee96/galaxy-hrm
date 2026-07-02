@@ -165,10 +165,9 @@ Route::get('email-templates/{emailTemplate}', [\App\Http\Controllers\EmailTempla
 Route::put('email-templates/{emailTemplate}/settings', [\App\Http\Controllers\EmailTemplateController::class, 'updateSettings'])->name('email-templates.update-settings');
 Route::put('email-templates/{emailTemplate}/content', [\App\Http\Controllers\EmailTemplateController::class, 'updateContent'])->name('email-templates.update-content');
 
-Route::middleware('signed')->group(function () {
-    Route::get('advance-salary-receipts/{advanceSalary}', [\App\Http\Controllers\AdvanceSalaryReceiptController::class, 'show'])->name('advance-salary-receipts.show');
-    Route::get('advance-salary-receipts/{advanceSalary}/image.png', [\App\Http\Controllers\AdvanceSalaryReceiptController::class, 'image'])->name('advance-salary-receipts.image');
-});
+Route::get('advance-salary-receipts/{advanceSalary}', [\App\Http\Controllers\AdvanceSalaryReceiptController::class, 'show'])->name('advance-salary-receipts.show');
+Route::get('advance-salary-receipts/{advanceSalary}/image', [\App\Http\Controllers\AdvanceSalaryReceiptController::class, 'image'])->name('advance-salary-receipts.image');
+Route::get('advance-salary-receipts/{advanceSalary}/image.png', [\App\Http\Controllers\AdvanceSalaryReceiptController::class, 'image']);
 
 Route::middleware(['auth', 'verified', 'setting'])->group(function () {
 
