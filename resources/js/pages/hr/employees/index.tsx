@@ -245,6 +245,7 @@ export default function Employees() {
           sortDirection={pageFilters.sort_direction}
           onSort={handleSort}
           permissions={permissions}
+          showRowNumbers={false}
           entityPermissions={{
             view: 'view-employees',
             create: 'create-employees',

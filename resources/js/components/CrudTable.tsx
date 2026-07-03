@@ -41,6 +41,7 @@ interface CrudTableProps {
   };
   showActionsAsIcons?: boolean;
   showActions?: boolean;
+  showRowNumbers?: boolean;
 }
 
 export function CrudTable({
@@ -56,6 +57,7 @@ export function CrudTable({
   permissions,
   entityPermissions,
   showActions = true,
+  showRowNumbers = true,
 }: CrudTableProps) {
   const { t } = useTranslation();
   const renderSortIcon = (column: TableColumn) => {
@@ -252,7 +254,7 @@ export function CrudTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-50 dark:bg-gray-800 border-b">
-            <TableHead className="w-12 py-2.5 font-semibold">#</TableHead>
+            {showRowNumbers && <TableHead className="w-12 py-2.5 font-semibold">#</TableHead>}
             {columns.map((column) => (
               <TableHead
                 key={column.key}
@@ -277,7 +279,7 @@ export function CrudTable({
           {data.length > 0 ? (
             data.map((row, index) => (
               <TableRow key={row.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900 border-b">
-                <TableCell className="font-medium py-2.5">{from + index}</TableCell>
+                {showRowNumbers && <TableCell className="font-medium py-2.5">{from + index}</TableCell>}
                 {columns.map((col) => (
                   <TableCell
                     key={col.key}
@@ -304,7 +306,7 @@ export function CrudTable({
                 {t("No results found.")}
               </TableCell> */}
               <TableCell
-                colSpan={columns.length + (showActions && hasAnyActionPermission ? 2 : 1)}
+                colSpan={columns.length + (showRowNumbers ? 1 : 0) + (showActions && hasAnyActionPermission ? 1 : 0)}
                 className="text-muted-foreground h-24 text-center dark:text-gray-400"
               >
                 {t('No results found.')}
