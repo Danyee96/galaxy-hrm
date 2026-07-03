@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker, DateRangePicker } from '@/components/ui/date-picker';
 import { Filter, Search, List, LayoutGrid } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface FilterOption {
@@ -21,6 +22,7 @@ interface SearchAndFilterBarProps {
   onSearchChange: (value: string) => void;
   onSearch: (e: React.FormEvent) => void;
   filters?: FilterOption[];
+  inlineFilters?: FilterOption[];
   showFilters: boolean;
   setShowFilters: (show: boolean) => void;
   hasActiveFilters: () => boolean;
@@ -41,6 +43,7 @@ export function SearchAndFilterBar({
   onSearchChange,
   onSearch,
   filters = [],
+  inlineFilters = [],
   showFilters,
   setShowFilters,
   hasActiveFilters,
@@ -62,10 +65,48 @@ export function SearchAndFilterBar({
     return filters.find((candidate) => candidate.type === 'date' && candidate.name === `${prefix}_to`) || null;
   };
 
+  const renderFilterControl = (filter: FilterOption, rangePair: FilterOption | null = null): ReactNode => (
+    <>
+      {filter.type === 'select' && filter.options && (
+        <Select
+          value={filter.value as string}
+          onValueChange={filter.onChange}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder={t(`All ${filter.label}`)} />
+          </SelectTrigger>
+          <SelectContent searchable={filter.searchable}>
+            {filter.options.map((option) => (
+              <SelectItem key={option.value || 'empty'} value={option.value || '_empty_'} disabled={option.disabled}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      {filter.type === 'date' && rangePair && (
+        <DateRangePicker
+          startValue={(filter.value as string) || ''}
+          endValue={(rangePair.value as string) || ''}
+          onStartChange={filter.onChange}
+          onEndChange={rangePair.onChange}
+          startPlaceholder={filter.label}
+          endPlaceholder={rangePair.label}
+        />
+      )}
+      {filter.type === 'date' && !rangePair && (
+        <DatePicker
+          value={(filter.value as string) || ''}
+          onChange={filter.onChange}
+        />
+      )}
+    </>
+  );
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-end gap-2">
           <form onSubmit={onSearch} className="flex gap-2">
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -81,6 +122,13 @@ export function SearchAndFilterBar({
               {t("Search")}
             </Button>
           </form>
+
+          {inlineFilters.map((filter) => (
+            <div key={filter.name} className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">{filter.label}</Label>
+              {renderFilterControl(filter)}
+            </div>
+          ))}
           
           {filters.length > 0 && (
             <div className="ml-2">
@@ -156,39 +204,7 @@ export function SearchAndFilterBar({
               return (
                 <div key={filter.name} className="space-y-2">
                   <Label>{rangePair ? `${filter.label} - ${rangePair.label}` : filter.label}</Label>
-                  {filter.type === 'select' && filter.options && (
-                    <Select
-                      value={filter.value as string}
-                      onValueChange={filter.onChange}
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder={t(`All ${filter.label}`)} />
-                      </SelectTrigger>
-                      <SelectContent searchable={filter.searchable}>
-                        {filter.options.map((option) => (
-                          <SelectItem key={option.value || 'empty'} value={option.value || '_empty_'} disabled={option.disabled}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {filter.type === 'date' && rangePair && (
-                    <DateRangePicker
-                      startValue={(filter.value as string) || ''}
-                      endValue={(rangePair.value as string) || ''}
-                      onStartChange={filter.onChange}
-                      onEndChange={rangePair.onChange}
-                      startPlaceholder={filter.label}
-                      endPlaceholder={rangePair.label}
-                    />
-                  )}
-                  {filter.type === 'date' && !rangePair && (
-                    <DatePicker
-                      value={(filter.value as string) || ''}
-                      onChange={filter.onChange}
-                    />
-                  )}
+                  {renderFilterControl(filter, rangePair)}
                 </div>
               );
             })}

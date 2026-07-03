@@ -57,6 +57,18 @@ export default function Employees() {
     router.get(route('hr.employees.index'), { page: 1, per_page: pageFilters.per_page }, { preserveState: true, preserveScroll: true });
   };
 
+  const handleDepartmentChange = (department: string) => {
+    setSelectedDepartment(department);
+    router.get(
+      route('hr.employees.index'),
+      {
+        ...filters,
+        department: department !== 'all' ? department : undefined,
+      },
+      { preserveState: true, preserveScroll: true },
+    );
+  };
+
   const handleAction = (action: string, item: any) => {
     setCurrentItem(item);
 
@@ -206,13 +218,13 @@ export default function Employees() {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onSearch={handleSearch}
-          filters={[
+          inlineFilters={[
             {
               name: 'department',
               label: t('Department'),
               type: 'select',
               value: selectedDepartment,
-              onChange: setSelectedDepartment,
+              onChange: handleDepartmentChange,
               options: departmentOptions,
               searchable: true,
             },
