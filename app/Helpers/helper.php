@@ -1010,7 +1010,9 @@ if (!function_exists('createDefaultSettings')) {
             ];
         }
 
-        Setting::insert($settingsData);
+        if (!empty($settingsData)) {
+            Setting::insertOrIgnore($settingsData);
+        }
     }
 }
 
@@ -1082,7 +1084,9 @@ if (!function_exists('copySettingsFromSuperAdmin')) {
             ];
         }
 
-        Setting::insertOrIgnore($settingsData);
+        if (!empty($settingsData)) {
+            Setting::insertOrIgnore($settingsData);
+        }
     }
 }
 
