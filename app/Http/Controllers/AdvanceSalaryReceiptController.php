@@ -14,12 +14,17 @@ class AdvanceSalaryReceiptController extends Controller
         $this->ensureValidSignature($request);
 
         $receipt = $this->receiptData($advanceSalary);
-        $imageUrl = URL::temporarySignedRoute('advance-salary-receipts.image', now()->addDays(7), $advanceSalary, false);
+        $imageUrl = URL::temporarySignedRoute('advance-salary-receipts.image', now()->addDays(7), [
+            'advanceSalary' => $advanceSalary,
+            'v' => 'smooth-20260705',
+        ], false);
+        $imageContentType = $this->canRenderRasterReceipt() ? 'image/png' : 'image/svg+xml';
 
         return response()->view('advance-salary-receipts.show', [
             'receipt' => $receipt,
             'imageUrl' => $imageUrl,
             'absoluteImageUrl' => $this->publicOrigin($request).$imageUrl,
+            'imageContentType' => $imageContentType,
             'pageUrl' => $request->fullUrl(),
         ]);
     }
@@ -30,8 +35,18 @@ class AdvanceSalaryReceiptController extends Controller
 
         $receipt = $this->receiptData($advanceSalary);
 
-        if (! function_exists('imagecreatetruecolor')) {
-            return response($this->svgReceipt($receipt), 200, [
+        if (! $this->canRenderGdPngReceipt()) {
+            $svg = $this->svgReceipt($receipt);
+            $png = $this->pngFromSvg($svg);
+
+            if ($png) {
+                return response($png, 200, [
+                    'Content-Type' => 'image/png',
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
+
+            return response($svg, 200, [
                 'Content-Type' => 'image/svg+xml',
                 'Cache-Control' => 'public, max-age=86400',
             ]);
@@ -135,46 +150,7 @@ class AdvanceSalaryReceiptController extends Controller
             return;
         }
 
-        $this->centerScaledBuiltinText($image, $text, $y, $size, $color, $maxWidth);
-    }
-
-    private function centerScaledBuiltinText($image, string $text, int $y, int $size, int $color, int $maxWidth): void
-    {
-        $fontSize = 5;
-        $sourceWidth = max(1, imagefontwidth($fontSize) * strlen($text));
-        $sourceHeight = imagefontheight($fontSize);
-        $scale = max(2, (int) round($size / $sourceHeight));
-
-        while ($sourceWidth * $scale > $maxWidth && $scale > 1) {
-            $scale--;
-        }
-
-        $targetWidth = $sourceWidth * $scale;
-        $targetHeight = $sourceHeight * $scale;
-        $source = imagecreatetruecolor($sourceWidth, $sourceHeight);
-        $transparent = imagecolorallocatealpha($source, 255, 255, 255, 127);
-        imagealphablending($source, false);
-        imagesavealpha($source, true);
-        imagefilledrectangle($source, 0, 0, $sourceWidth, $sourceHeight, $transparent);
-
-        $rgba = imagecolorsforindex($image, $color);
-        $sourceColor = imagecolorallocate($source, $rgba['red'], $rgba['green'], $rgba['blue']);
-        imagestring($source, $fontSize, 0, 0, $text, $sourceColor);
-
-        imagecopyresampled(
-            $image,
-            $source,
-            (int) ((imagesx($image) - $targetWidth) / 2),
-            (int) ($y - ($targetHeight / 2)),
-            0,
-            0,
-            $targetWidth,
-            $targetHeight,
-            $sourceWidth,
-            $sourceHeight
-        );
-
-        imagedestroy($source);
+        throw new \RuntimeException('A TrueType font is required to render the advance receipt PNG.');
     }
 
     private function svgReceipt(array $receipt): string
@@ -230,5 +206,70 @@ SVG;
         }
 
         return null;
+    }
+
+    private function canRenderRasterReceipt(): bool
+    {
+        return $this->canRenderGdPngReceipt() || $this->canRenderImagickPngReceipt();
+    }
+
+    private function canRenderGdPngReceipt(): bool
+    {
+        return function_exists('imagecreatetruecolor')
+            && function_exists('imagettftext')
+            && $this->fontPath(true)
+            && $this->fontPath(false);
+    }
+
+    private function pngFromSvg(string $svg): ?string
+    {
+        if (! $this->canRenderImagickPngReceipt()) {
+            return null;
+        }
+
+        try {
+            $image = new \Imagick();
+            $image->setBackgroundColor(new \ImagickPixel('white'));
+            $image->setResolution(192, 192);
+            $image->readImageBlob($svg);
+            $image->setImageFormat('png');
+            $image->setImageDepth(8);
+
+            $png = $image->getImagesBlob();
+
+            $image->clear();
+            $image->destroy();
+
+            return $png ?: null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function canRenderImagickPngReceipt(): bool
+    {
+        static $canRender = null;
+
+        if ($canRender !== null) {
+            return $canRender;
+        }
+
+        if (! class_exists(\Imagick::class)) {
+            return $canRender = false;
+        }
+
+        try {
+            $image = new \Imagick();
+            $image->setBackgroundColor(new \ImagickPixel('white'));
+            $image->readImageBlob('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="#fff"/></svg>');
+            $image->setImageFormat('png');
+            $canRender = (bool) $image->getImagesBlob();
+            $image->clear();
+            $image->destroy();
+
+            return $canRender;
+        } catch (\Throwable) {
+            return $canRender = false;
+        }
     }
 }

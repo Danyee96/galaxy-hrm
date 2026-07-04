@@ -13,7 +13,7 @@
     <meta property="og:description" content="Dept: {{ $receipt['department_name'] }} · {{ $receipt['date'] }} · Total this month Rs {{ $receipt['month_total'] }}">
     <meta property="og:image" content="{{ $absoluteImageUrl }}">
     <meta property="og:image:secure_url" content="{{ $absoluteImageUrl }}">
-    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:type" content="{{ $imageContentType }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Salary advance receipt for {{ $receipt['employee_name'] }}">
