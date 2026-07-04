@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('system-backups:auto')
             ->twiceDaily(0, 12)
+            ->timezone(config('app.backup_schedule_timezone', 'Asia/Karachi'))
             ->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware) {
