@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Currency;
+use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -131,6 +132,8 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
+        $currentCompany = $this->currentCompanyFor($request->user());
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -160,6 +163,28 @@ class HandleInertiaRequests extends Middleware
             'globalSettings' => $globalSettings,
             'is_demo' => config('app.is_demo'),
             'companySlug' => $companySlug,
+            'currentCompany' => $currentCompany,
+        ];
+    }
+
+    private function currentCompanyFor(?User $user): ?array
+    {
+        if (!$user) {
+            return null;
+        }
+
+        $company = $user;
+
+        if (!$user->isSuperAdmin() && $user->type !== 'company') {
+            $companyId = getCompanyId($user->id);
+            $company = $companyId ? User::find($companyId) : $user;
+        }
+
+        return [
+            'id' => $company->id,
+            'name' => $company->name,
+            'email' => $company->email,
+            'type' => $company->type,
         ];
     }
 }

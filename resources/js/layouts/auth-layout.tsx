@@ -10,6 +10,8 @@ import { getImagePath } from '@/utils/helpers';
 import { Head, usePage } from '@inertiajs/react';
 import React from 'react';
 
+const DEFAULT_LOGIN_LOGO = '/images/logos/galaxy-logo.png';
+
 interface AuthLayoutProps {
     children: ReactNode;
     title: string;
@@ -51,6 +53,7 @@ export default function AuthLayout({
     const [mounted, setMounted] = useState(false);
     const { logoLight, logoDark, themeColor, customColor } = useBrand();
     const { appearance } = useAppearance();
+    const [logoSrc, setLogoSrc] = useState(DEFAULT_LOGIN_LOGO);
 
     const currentLogo = appearance === 'dark' ? logoLight : logoDark;
     const primaryColor = themeColor === 'custom' ? customColor : THEME_COLORS[themeColor as keyof typeof THEME_COLORS];
@@ -69,6 +72,10 @@ export default function AuthLayout({
             i18n.changeLanguage(userLanguage);
         }
     }, [userLanguage]);
+
+    useEffect(() => {
+        setLogoSrc(currentLogo ? getImagePath(currentLogo) || DEFAULT_LOGIN_LOGO : DEFAULT_LOGIN_LOGO);
+    }, [currentLogo]);
 
     // RTL Support for auth pages
     // useEffect(() => {
@@ -202,8 +209,17 @@ export default function AuthLayout({
                     {/* Logo */}
                     <div className="text-center mb-8">
                         <div className="relative lg:inline-block pb-2 lg:px-6">
-                            {currentLogo ? (
-                                <img src={getImagePath(currentLogo)} alt="Logo" className="mx-auto h-16 w-auto max-w-[280px] object-contain" />
+                            {logoSrc ? (
+                                <img
+                                    src={logoSrc}
+                                    alt="Galaxy"
+                                    className="mx-auto h-16 w-auto max-w-[280px] object-contain"
+                                    onError={() => {
+                                        if (logoSrc !== DEFAULT_LOGIN_LOGO) {
+                                            setLogoSrc(DEFAULT_LOGIN_LOGO);
+                                        }
+                                    }}
+                                />
                             ) : (
                                 <CreditCard className="h-8 w-8 mx-auto" style={{ color: primaryColor }} />
                             )}
@@ -250,7 +266,7 @@ export default function AuthLayout({
                     {/* Footer */}
                     <div className="text-center mt-6">
                             <div className="inline-flex items-center space-x-2 bg-white backdrop-blur-sm rounded-md px-4 py-2 border border-gray-200">
-                                <p className="text-sm text-gray-500">{globalSettings?.footerText || '© 2026 HRM SaaS'}</p>
+                                <p className="text-sm text-gray-500">© 2026 Edylinn Techologies. All rights reserved.</p>
                             </div>
                     </div>
                 </div>

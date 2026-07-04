@@ -3,7 +3,6 @@ import { Mail, Lock } from 'lucide-react';
 import { FormEventHandler, useState, useEffect } from 'react';
 
 import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,11 +30,10 @@ interface Business {
 
 interface LoginProps {
     status?: string;
-    canResetPassword: boolean;
     demoBusinesses?: Business[];
 }
 
-export default function Login({ status, canResetPassword, demoBusinesses = [] }: LoginProps) {
+export default function Login({ status, demoBusinesses = [] }: LoginProps) {
     const { t } = useTranslation();
     const [recaptchaToken, setRecaptchaToken] = useState<string>('');
     const { themeColor, customColor } = useBrand();
@@ -110,16 +108,6 @@ export default function Login({ status, canResetPassword, demoBusinesses = [] }:
                 <div className="mb-4">
                     <div className="flex justify-between items-center mb-2">
                         <Label htmlFor="password" className="block text-sm font-medium text-gray-900">{t("Password")}</Label>
-                        {canResetPassword && (
-                            <TextLink
-                                href={route('password.request')}
-                                className="text-sm no-underline hover:underline hover:underline-primary"
-                                style={{ color: primaryColor }}
-                                tabIndex={5}
-                            >
-                                {t("Forgot password?")}
-                            </TextLink>
-                        )}
                     </div>
                     <Input
                         id="password"
@@ -164,22 +152,6 @@ export default function Login({ status, canResetPassword, demoBusinesses = [] }:
                 >
                     {processing ? t("Signing in...") : t("Login")}
                 </button>
-
-                {isSaas && (
-                    <div className="text-center">
-                        <p className="text-sm text-gray-500">
-                            {t("Don't have an account?")}{' '}
-                            <TextLink
-                                href={route('register')}
-                                className="font-medium hover:underline"
-                                style={{ color: primaryColor }}
-                                tabIndex={6}
-                            >
-                                {t("Sign up")}
-                            </TextLink>
-                        </p>
-                    </div>
-                )}
 
                 {isDemo && (
                     <>

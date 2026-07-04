@@ -32,7 +32,7 @@ const resolveSidebarImage = (path?: string, fallback = '') => {
 
 export function AppSidebar() {
     const { t, i18n } = useTranslation();
-    const { auth, globalSettings, companySlug } = usePage().props as any;
+    const { auth, globalSettings, companySlug, currentCompany } = usePage().props as any;
     const userRole = auth.user?.type || auth.user?.role;
     const permissions = auth?.permissions || [];
     const isSaas = globalSettings?.is_saas;
@@ -1101,6 +1101,8 @@ export function AppSidebar() {
     }, [favicon]);
 
     const filteredNavItems = mainNavItems;
+    const accountName = currentCompany?.name || auth.user?.name || titleText || 'HRM';
+    const accountEmail = currentCompany?.email || auth.user?.email;
 
     // Get the first available menu item's href for logo link
     const getFirstAvailableHref = () => {
@@ -1188,7 +1190,21 @@ export function AppSidebar() {
                 </div>
             </SidebarContent>
 
-            <SidebarFooter>
+            <SidebarFooter className={style !== 'plain' ? 'sidebar-styled' : ''} style={sidebarStyle}>
+                <div className="group-data-[collapsible=icon]:hidden flex min-h-[112px] flex-col justify-center rounded-md border border-white/25 bg-white/12 px-4 py-5 text-white shadow-sm">
+                    <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-normal text-white/70">
+                        <Building2 className="h-4 w-4 shrink-0" />
+                        <span>{t('Logged in as')}</span>
+                    </div>
+                    <div className="break-words text-2xl font-extrabold leading-tight text-white">
+                        {accountName}
+                    </div>
+                    {accountEmail && (
+                        <div className="mt-2 break-words text-xs font-medium leading-snug text-white/75">
+                            {accountEmail}
+                        </div>
+                    )}
+                </div>
                 {/* <NavFooter items={footerNavItems} className="mt-auto" position={position} /> */}
                 {/* Profile menu moved to header */}
             </SidebarFooter>

@@ -37,16 +37,9 @@ class CheckInstallation
             return redirect('/install');
         }
 
-        // If logged in as superadmin and migrations needed, redirect to /update
-        if (isSaas()) {
-            if (auth()->check() && auth()->user()->hasRole('superadmin') && $this->needsMigration()) {
-                return redirect('/update');
-            }
-        } else {
-            if (auth()->check() && auth()->user()->hasRole('company') && $this->needsMigration()) {
-                return redirect('/update');
-            }
-            
+        // Updates are a deployment/admin concern. Never send company users to the updater wizard.
+        if ($this->updaterEnabled() && auth()->check() && $this->isSuperAdmin(auth()->user()) && $this->needsMigration()) {
+            return redirect('/update');
         }
 
 
@@ -73,5 +66,17 @@ class CheckInstallation
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    private function isSuperAdmin($user): bool
+    {
+        $type = strtolower((string) $user->type);
+
+        return in_array($type, ['superadmin', 'super admin'], true);
+    }
+
+    private function updaterEnabled(): bool
+    {
+        return filter_var(config('installer.updaterEnabled'), FILTER_VALIDATE_BOOLEAN);
     }
 }

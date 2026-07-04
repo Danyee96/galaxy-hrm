@@ -145,6 +145,6 @@ return [
     | Boolean value
     |
     */
-    'updaterEnabled' => 'true',
+    'updaterEnabled' => env('UPDATER_ENABLED', false),
 
 ];
