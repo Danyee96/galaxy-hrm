@@ -11,10 +11,13 @@ class CheckSaas
 
     public function handle(Request $request, Closure $next): Response
     {
-        $checkSaas = isSaas();        
-        if(!$checkSaas){
+        $user = $request->user();
+        $isSuperAdmin = $user && in_array($user->type, ['superadmin', 'super admin'], true);
+
+        if (!isSaas() && !$isSuperAdmin) {
             abort(404);
         }
+
         return $next($request);
     }
 }

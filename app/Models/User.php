@@ -118,10 +118,6 @@ class User extends BaseAuthenticatable implements MustVerifyEmail
      */
     public function isSuperAdmin()
     {
-        if (! isSaas()) {
-            return false; // No super admin in non-SaaS
-        }
-
         return $this->type === 'superadmin' || $this->type === 'super admin';
     }
 
