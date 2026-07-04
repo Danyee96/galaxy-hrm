@@ -5,7 +5,7 @@ namespace App\Listeners;
 use App\Events\UserCreated;
 use App\Services\EmailTemplateService;
 use App\Services\WebhookService;
-use Exception;
+use Throwable;
 
 class SendUserCreatedEmail
 {
@@ -55,7 +55,7 @@ class SendUserCreatedEmail
             // Trigger webhooks for New User
             $this->webhookService->triggerWebhooks('New User', $user->toArray(), $user->created_by ?? $user->id);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             // Store error in session for frontend notification
             session()->flash('email_error', 'Failed to send welcome email: ' . $e->getMessage());
         }

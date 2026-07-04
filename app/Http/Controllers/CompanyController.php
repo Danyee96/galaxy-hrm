@@ -6,9 +6,11 @@ use App\Models\Plan;
 use App\Models\PlanOrder;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Throwable;
 
 class CompanyController extends Controller
 {
@@ -82,55 +84,75 @@ class CompanyController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
-        $company = new User;
-        $company->name = $validated['name'];
-        $company->email = $validated['email'];
+        try {
+            DB::beginTransaction();
 
-        // Only set password if provided
-        if (isset($validated['password'])) {
-            $company->password = Hash::make($validated['password']);
-        }
+            $company = new User;
+            $company->name = $validated['name'];
+            $company->email = $validated['email'];
 
-        $company->type = 'company';
-        $company->status = $validated['status'];
-        $company->created_by = creatorId() ?? 1;
-
-        // Set company language same as creator (superadmin)
-        $creator = auth()->user();
-        $superAdminSettings = settings();
-        $userLang = isset($superAdminSettings['defaultLanguage']) ? $superAdminSettings['defaultLanguage'] : $creator->lang;
-        $company->lang = $userLang;
-
-        // Assign default plan
-        $defaultPlan = Plan::where('is_default', true)->first();
-        if ($defaultPlan) {
-            $company->plan_id = $defaultPlan->id;
-
-            // Set plan expiry date based on plan duration
-            if ($defaultPlan->duration === 'yearly') {
-                $company->plan_expire_date = now()->addYear();
-            } else {
-                $company->plan_expire_date = now()->addMonth();
+            // Only set password if provided
+            if (isset($validated['password'])) {
+                $company->password = Hash::make($validated['password']);
             }
 
-            // Set plan is active
-            $company->plan_is_active = 1;
+            $company->type = 'company';
+            $company->status = $validated['status'];
+            $company->created_by = creatorId() ?? 1;
+
+            // Set company language same as creator (superadmin)
+            $creator = auth()->user();
+            $superAdminSettings = settings();
+            $userLang = isset($superAdminSettings['defaultLanguage']) ? $superAdminSettings['defaultLanguage'] : $creator->lang;
+            $company->lang = $userLang;
+
+            // Assign default plan
+            $defaultPlan = Plan::where('is_default', true)->first();
+            if ($defaultPlan) {
+                $company->plan_id = $defaultPlan->id;
+
+                // Set plan expiry date based on plan duration
+                if ($defaultPlan->duration === 'yearly') {
+                    $company->plan_expire_date = now()->addYear();
+                } else {
+                    $company->plan_expire_date = now()->addMonth();
+                }
+
+                // Set plan is active
+                $company->plan_is_active = 1;
+            }
+
+            $company->save();
+
+            // Assign role and settings to the user
+            defaultRoleAndSetting($company);
+
+            DB::commit();
+
+            // Trigger email notification after the company setup is saved.
+            event(new \App\Events\UserCreated($company, $validated['password'] ?? ''));
+
+            // Check for email errors
+            if (session()->has('email_error')) {
+                return redirect()->back()->with('warning', __('Company created successfully, but welcome email failed: ') . session('email_error'));
+            }
+
+            return redirect()->back()->with('success', __('Company created successfully'));
+        } catch (Throwable $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            Log::error('Company creation failed', [
+                'message' => $e->getMessage(),
+                'email' => $validated['email'] ?? null,
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', __('Company could not be created: :message', ['message' => $e->getMessage()]));
         }
-
-        $company->save();
-
-        // Assign role and settings to the user
-        defaultRoleAndSetting($company);
-
-        // Trigger email notification
-        event(new \App\Events\UserCreated($company, $validated['password'] ?? ''));
-
-        // Check for email errors
-        if (session()->has('email_error')) {
-            return redirect()->back()->with('warning', __('Company created successfully, but welcome email failed: ') . session('email_error'));
-        }
-
-        return redirect()->back()->with('success', __('Company created successfully'));
     }
 
     public function update(Request $request, User $company)

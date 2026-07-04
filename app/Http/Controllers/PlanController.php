@@ -28,8 +28,8 @@ class PlanController extends Controller
 
 
         // Always use super admin currency for plan pricing
-        $superAdmin = User::where('type', 'superadmin')->first();
-        $superAdminSettings = settings($superAdmin->id);
+        $superAdmin = User::whereIn('type', ['superadmin', 'super admin'])->first();
+        $superAdminSettings = settings($superAdmin?->id);
         $currency = $superAdminSettings ? ($superAdminSettings['defaultCurrency'] ?? 'USD') : 'USD';
         $currencySymbol = '$';
         if (!empty($currency)) {
@@ -247,8 +247,8 @@ class PlanController extends Controller
 
 
         // Always use super admin currency for plan pricing
-        $superAdmin = User::where('type', 'superadmin')->first();
-        $superAdminSettings = settings($superAdmin->id);
+        $superAdmin = User::whereIn('type', ['superadmin', 'super admin'])->first();
+        $superAdminSettings = settings($superAdmin?->id);
         $currency = $superAdminSettings ? ($superAdminSettings['defaultCurrency'] ?? 'USD') : 'USD';
         $currencySymbol = '$';
         if (!empty($currency)) {

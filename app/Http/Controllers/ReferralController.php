@@ -60,8 +60,8 @@ class ReferralController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(50);
         // Always use super admin currency for plan pricing
-        $superAdmin = User::where('type', 'superadmin')->first();
-        $superAdminSettings = settings($superAdmin->id);
+        $superAdmin = User::whereIn('type', ['superadmin', 'super admin'])->first();
+        $superAdminSettings = settings($superAdmin?->id);
         $currency = $superAdminSettings ? ($superAdminSettings['defaultCurrency'] ?? 'USD') : 'USD';
         $currencySymbol = '$';
         if (!empty($currency)) {
@@ -125,8 +125,8 @@ class ReferralController extends Controller
         $referralLink = url('/register?ref=' . $user->referral_code);
 
         // Always use super admin currency for plan pricing
-        $superAdmin = User::where('type', 'superadmin')->first();
-        $superAdminSettings = settings($superAdmin->id);
+        $superAdmin = User::whereIn('type', ['superadmin', 'super admin'])->first();
+        $superAdminSettings = settings($superAdmin?->id);
         $currency = $superAdminSettings ? ($superAdminSettings['defaultCurrency'] ?? 'USD') : 'USD';
         $currencySymbol = '$';
         if (!empty($currency)) {
@@ -220,8 +220,8 @@ class ReferralController extends Controller
     {
         $user = Auth::user();
         // Always use super admin currency for plan pricing
-        $superAdmin = User::where('type', 'superadmin')->first();
-        $superAdminSettings = settings($superAdmin->id);
+        $superAdmin = User::whereIn('type', ['superadmin', 'super admin'])->first();
+        $superAdminSettings = settings($superAdmin?->id);
         $currency = $superAdminSettings ? ($superAdminSettings['defaultCurrency'] ?? 'USD') : 'USD';
         $currencySymbol = '$';
         if (!empty($currency)) {

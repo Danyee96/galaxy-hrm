@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -171,6 +172,73 @@ return new class extends Migration
                 $table->text('notes')->nullable();
                 $table->timestamps();
             });
+        }
+
+        if (Schema::hasTable('plans') && DB::table('plans')->count() === 0) {
+            DB::table('plans')->insert([
+                [
+                    'name' => 'Free',
+                    'price' => 0,
+                    'yearly_price' => 0,
+                    'duration' => 'monthly',
+                    'description' => 'Basic plan for small businesses just getting started.',
+                    'max_users' => 2,
+                    'max_employees' => 5,
+                    'enable_chatgpt' => 'off',
+                    'storage_limit' => 1,
+                    'is_trial' => null,
+                    'trial_day' => 0,
+                    'is_plan_enable' => 'on',
+                    'is_default' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'name' => 'Starter',
+                    'price' => 19.99,
+                    'yearly_price' => 191.90,
+                    'duration' => 'monthly',
+                    'description' => 'Perfect for small businesses looking to grow.',
+                    'max_users' => 10,
+                    'max_employees' => 25,
+                    'enable_chatgpt' => 'off',
+                    'storage_limit' => 5,
+                    'is_trial' => 'on',
+                    'trial_day' => 7,
+                    'is_plan_enable' => 'on',
+                    'is_default' => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'name' => 'Pro',
+                    'price' => 49.99,
+                    'yearly_price' => 479.90,
+                    'duration' => 'monthly',
+                    'description' => 'Ideal for growing businesses with advanced needs.',
+                    'max_users' => 50,
+                    'max_employees' => 100,
+                    'enable_chatgpt' => 'on',
+                    'storage_limit' => 50,
+                    'is_trial' => 'on',
+                    'trial_day' => 14,
+                    'is_plan_enable' => 'on',
+                    'is_default' => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            ]);
+        }
+
+        if (Schema::hasTable('referral_settings') && DB::table('referral_settings')->count() === 0) {
+            DB::table('referral_settings')->insert([
+                'is_enabled' => true,
+                'commission_percentage' => 10.00,
+                'threshold_amount' => 50.00,
+                'guidelines' => 'Welcome to our referral program! Earn commission when users sign up using your referral link and purchase a plan.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
     }
 
