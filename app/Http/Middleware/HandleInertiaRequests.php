@@ -78,6 +78,11 @@ class HandleInertiaRequests extends Middleware
         } else {
             // Get system settings
             $settings = settings();
+            if ($settings instanceof \Illuminate\Support\Collection) {
+                $settings = $settings->toArray();
+            } elseif (!is_array($settings)) {
+                $settings = (array) $settings;
+            }
             // Get currency symbol
             $currencyCode = $settings['defaultCurrency'] ?? 'PKR';
             $currency = Currency::where('code', $currencyCode)->first();

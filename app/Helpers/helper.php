@@ -74,7 +74,7 @@ if (!function_exists('settings')) {
         }
 
         if (!$user_id) {
-            return collect();
+            return [];
         }
         $userSettings = Setting::where('user_id', $user_id)->pluck('value', 'key')->toArray();
 
