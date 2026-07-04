@@ -153,6 +153,10 @@ class EmployeeController extends Controller
     {
         if (Auth::user()->can('create-employees')) {
             try {
+                $request->merge([
+                    'employee_id' => trim((string) $request->employee_id),
+                ]);
+
                 $validator = Validator::make($request->all(), [
                     'employee_id' => [
                         'nullable',
@@ -165,6 +169,8 @@ class EmployeeController extends Controller
                     'whatsapp_number' => 'nullable|string|max:30',
                     'salary' => 'nullable|numeric|min:0',
                     'bonus' => 'nullable|numeric|min:0',
+                ], [
+                    'employee_id.unique' => __('Employee ID already exists.'),
                 ]);
 
                 if ($validator->fails()) {
@@ -248,6 +254,32 @@ class EmployeeController extends Controller
         } else {
             return redirect()->back()->with('error', __('Permission Denied.'));
         }
+    }
+
+    public function checkEmployeeId(Request $request)
+    {
+        if (! Auth::user()->can('create-employees') && ! Auth::user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $employeeId = trim((string) $request->query('employee_id', ''));
+        $ignoreId = $request->query('ignore_id');
+
+        if ($employeeId === '') {
+            return response()->json([
+                'available' => true,
+                'message' => null,
+            ]);
+        }
+
+        $exists = Employee::where('employee_id', $employeeId)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists();
+
+        return response()->json([
+            'available' => ! $exists,
+            'message' => $exists ? __('Employee ID already exists.') : null,
+        ]);
     }
 
     public function import(Request $request, EmployeeImportService $importService)
@@ -369,6 +401,8 @@ class EmployeeController extends Controller
                     'whatsapp_number' => 'nullable|string|max:30',
                     'salary' => 'nullable|numeric|min:0',
                     'bonus' => 'nullable|numeric|min:0',
+                ], [
+                    'employee_id.unique' => __('Employee ID already exists.'),
                 ]);
 
                 if ($validator->fails()) {

@@ -369,6 +369,7 @@ Route::middleware(['auth', 'verified', 'setting'])->group(function () {
         Route::middleware('permission:manage-employees')->group(function () {
             Route::get('hr/employees', [EmployeeController::class, 'index'])->name('hr.employees.index');
             Route::get('hr/employees/create', [EmployeeController::class, 'create'])->middleware('permission:create-employees')->name('hr.employees.create');
+            Route::get('hr/employees/check-employee-id', [EmployeeController::class, 'checkEmployeeId'])->middleware('permission:create-employees')->name('hr.employees.check-employee-id');
             Route::post('hr/employees', [EmployeeController::class, 'store'])->middleware('permission:create-employees')->name('hr.employees.store');
             Route::post('hr/employees/import', [EmployeeController::class, 'import'])->middleware('permission:create-employees')->name('hr.employees.import');
             Route::delete('hr/employees/bulk-destroy', [EmployeeController::class, 'bulkDestroy'])->middleware('permission:delete-employees')->name('hr.employees.bulk-destroy');

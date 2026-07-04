@@ -107,12 +107,14 @@ class AttendanceRecordController extends Controller
             $dateKey = $date->toDateString();
             $record = $records->get($dateKey);
             $holiday = $workingSchedule->holidayForDate($date);
+            $isWorkingDate = $workingSchedule->isWorkingDate($date);
             $leaveType = null;
 
-            if ($record?->status === 'on_leave') {
-                $leaveApplication = LeaveApplication::where('employee_id', $record->employee_id)
-                    ->whereDate('start_date', '<=', $record->date)
-                    ->whereDate('end_date', '>=', $record->date)
+            $leaveApplication = null;
+            if ($selectedEmployeeId && (! $record || $record?->status === 'on_leave')) {
+                $leaveApplication = LeaveApplication::where('employee_id', $record?->employee_id ?? $selectedEmployeeId)
+                    ->whereDate('start_date', '<=', $dateKey)
+                    ->whereDate('end_date', '>=', $dateKey)
                     ->where('status', 'approved')
                     ->with('leaveType')
                     ->first();
@@ -127,8 +129,13 @@ class AttendanceRecordController extends Controller
 
             if ($holiday) {
                 $status = (! $record || $record->status === 'absent' || $record->status === 'no_record') ? 'holiday' : $record->status;
+            } elseif ($leaveApplication) {
+                $status = 'on_leave';
             } else {
-                $status = $record?->status ?? 'no_record';
+                $status = $record?->status ?? ($isWorkingDate ? 'absent' : 'holiday');
+                if ($status === 'no_record') {
+                    $status = $isWorkingDate ? 'absent' : 'holiday';
+                }
             }
 
             if ($partialPunch) {

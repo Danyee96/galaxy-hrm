@@ -7,14 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/components/custom-toast';
 import { router, usePage } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function EmployeeCreate() {
   const { t } = useTranslation();
   const { departments, flash = {} } = usePage().props as any;
-  const [formData, setFormData] = useState({ name: '', department_id: '', whatsapp_number: '', salary: '', bonus: '' });
+  const [formData, setFormData] = useState({ employee_id: '', name: '', department_id: '', whatsapp_number: '', salary: '', bonus: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isCheckingEmployeeId, setIsCheckingEmployeeId] = useState(false);
+  const [isEmployeeIdAvailable, setIsEmployeeIdAvailable] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatPakistanWhatsAppNumber = (value: string) => {
@@ -33,7 +35,7 @@ export default function EmployeeCreate() {
     return Number.isInteger(amount) ? String(amount) : String(amount);
   };
 
-  const handleChange = (name: 'name' | 'department_id' | 'whatsapp_number' | 'salary' | 'bonus', value: string) => {
+  const handleChange = (name: 'employee_id' | 'name' | 'department_id' | 'whatsapp_number' | 'salary' | 'bonus', value: string) => {
     setFormData((current) => ({ ...current, [name]: value }));
     if (errors[name]) {
       setErrors((current) => {
@@ -42,10 +44,71 @@ export default function EmployeeCreate() {
         return next;
       });
     }
+    if (name === 'employee_id') {
+      setIsEmployeeIdAvailable(null);
+    }
   };
+
+  useEffect(() => {
+    const employeeId = formData.employee_id.trim();
+
+    if (!employeeId) {
+      setIsCheckingEmployeeId(false);
+      setIsEmployeeIdAvailable(null);
+      setErrors((current) => {
+        if (!current.employee_id) return current;
+        const next = { ...current };
+        delete next.employee_id;
+        return next;
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      setIsCheckingEmployeeId(true);
+
+      fetch(route('hr.employees.check-employee-id', { employee_id: employeeId }), {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      })
+        .then((response) => (response.ok ? response.json() : Promise.reject(response)))
+        .then((data) => {
+          setIsEmployeeIdAvailable(Boolean(data.available));
+          setErrors((current) => {
+            const next = { ...current };
+            if (data.available) {
+              delete next.employee_id;
+            } else {
+              next.employee_id = data.message || t('Employee ID already exists.');
+            }
+            return next;
+          });
+        })
+        .catch((error) => {
+          if (error?.name !== 'AbortError') {
+            setIsEmployeeIdAvailable(null);
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) {
+            setIsCheckingEmployeeId(false);
+          }
+        });
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [formData.employee_id, t]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (errors.employee_id) {
+      toast.error(errors.employee_id);
+      return;
+    }
     setIsSubmitting(true);
 
     router.post(route('hr.employees.store'), formData, {
@@ -97,6 +160,23 @@ export default function EmployeeCreate() {
                 {t(flash.error)}
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="employee_id">{t('Employee ID')}</Label>
+              <Input
+                id="employee_id"
+                value={formData.employee_id}
+                onChange={(event) => handleChange('employee_id', event.target.value)}
+                className={errors.employee_id ? 'border-red-500' : ''}
+              />
+              {errors.employee_id && <p className="text-xs text-red-500">{errors.employee_id}</p>}
+              {!errors.employee_id && isCheckingEmployeeId && (
+                <p className="text-xs text-muted-foreground">{t('Checking employee ID...')}</p>
+              )}
+              {!errors.employee_id && isEmployeeIdAvailable && (
+                <p className="text-xs text-green-600">{t('Employee ID is available.')}</p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="name" required>{t('Name')}</Label>
@@ -181,7 +261,7 @@ export default function EmployeeCreate() {
               <Button type="button" variant="outline" onClick={() => router.get(route('hr.employees.index'))}>
                 {t('Cancel')}
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || Boolean(errors.employee_id) || isCheckingEmployeeId}>
                 {isSubmitting ? t('Saving...') : t('Save Employee')}
               </Button>
             </div>
