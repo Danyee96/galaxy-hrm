@@ -45,17 +45,17 @@ class AdvanceSalaryReceiptController extends Controller
 
         imagefilledrectangle($image, 0, 0, 1000, 500, $white);
 
-        $this->centerText($image, "Name: {$receipt['employee_name']}", 80, 40, $black);
-        $this->centerText($image, "Dept: {$receipt['department_name']}", 125, 36, $black);
-        $this->centerText($image, 'Advance taken', 190, 52, $black, true);
-        $this->centerText($image, 'Rs '.$receipt['amount'], 260, 60, $red, true);
-        $this->centerText($image, $receipt['date'], 315, 30, $black, true);
+        $this->centerText($image, "Name: {$receipt['employee_name']}", 70, 56, $black, true, 920);
+        $this->centerText($image, "Dept: {$receipt['department_name']}", 125, 50, $black, true, 920);
+        $this->centerText($image, 'Advance taken', 190, 62, $black, true);
+        $this->centerText($image, 'Rs '.$receipt['amount'], 260, 76, $red, true);
+        $this->centerText($image, $receipt['date'], 315, 40, $black, true);
 
         imagesetthickness($image, 5);
         imageline($image, 190, 365, 810, 365, $black);
 
-        $this->centerText($image, 'Total Advance taken this month:', 415, 31, $black, true);
-        $this->centerText($image, 'Rs '.$receipt['month_total'], 460, 40, $red, true);
+        $this->centerText($image, 'Total Advance taken this month:', 415, 44, $black, true, 920);
+        $this->centerText($image, 'Rs '.$receipt['month_total'], 460, 58, $red, true);
 
         ob_start();
         imagepng($image);
@@ -107,20 +107,68 @@ class AdvanceSalaryReceiptController extends Controller
         return $proto.'://'.$host;
     }
 
-    private function centerText($image, string $text, int $y, int $size, int $color, bool $bold = false): void
+    private function centerText($image, string $text, int $y, int $size, int $color, bool $bold = false, int $maxWidth = 940): void
     {
         $font = $this->fontPath($bold);
 
         if ($font) {
+            while ($size > 18) {
+                $box = imagettfbbox($size, 0, $font, $text);
+                $width = $box[2] - $box[0];
+
+                if ($width <= $maxWidth) {
+                    break;
+                }
+
+                $size -= 2;
+            }
+
             $box = imagettfbbox($size, 0, $font, $text);
             $width = $box[2] - $box[0];
             imagettftext($image, $size, 0, (int) ((1000 - $width) / 2), $y, $color, $font, $text);
             return;
         }
 
+        $this->centerScaledBuiltinText($image, $text, $y, $size, $color, $maxWidth);
+    }
+
+    private function centerScaledBuiltinText($image, string $text, int $y, int $size, int $color, int $maxWidth): void
+    {
         $fontSize = 5;
-        $width = imagefontwidth($fontSize) * strlen($text);
-        imagestring($image, $fontSize, (int) ((1000 - $width) / 2), $y - 12, $text, $color);
+        $sourceWidth = max(1, imagefontwidth($fontSize) * strlen($text));
+        $sourceHeight = imagefontheight($fontSize);
+        $scale = max(2, (int) round($size / $sourceHeight));
+
+        while ($sourceWidth * $scale > $maxWidth && $scale > 1) {
+            $scale--;
+        }
+
+        $targetWidth = $sourceWidth * $scale;
+        $targetHeight = $sourceHeight * $scale;
+        $source = imagecreatetruecolor($sourceWidth, $sourceHeight);
+        $transparent = imagecolorallocatealpha($source, 255, 255, 255, 127);
+        imagealphablending($source, false);
+        imagesavealpha($source, true);
+        imagefilledrectangle($source, 0, 0, $sourceWidth, $sourceHeight, $transparent);
+
+        $rgba = imagecolorsforindex($image, $color);
+        $sourceColor = imagecolorallocate($source, $rgba['red'], $rgba['green'], $rgba['blue']);
+        imagestring($source, $fontSize, 0, 0, $text, $sourceColor);
+
+        imagecopyresampled(
+            $image,
+            $source,
+            (int) ((1000 - $targetWidth) / 2),
+            (int) ($y - ($targetHeight / 2)),
+            0,
+            0,
+            $targetWidth,
+            $targetHeight,
+            $sourceWidth,
+            $sourceHeight
+        );
+
+        imagedestroy($source);
     }
 
     private function svgReceipt(array $receipt): string
@@ -134,14 +182,14 @@ class AdvanceSalaryReceiptController extends Controller
         return <<<SVG
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="500" viewBox="0 0 1000 500">
   <rect width="1000" height="500" fill="#ffffff"/>
-  <text x="500" y="80" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="42" fill="#111827">Name: {$employeeName}</text>
-  <text x="500" y="125" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="38" fill="#111827">Dept: {$departmentName}</text>
-  <text x="500" y="190" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#111827">Advance taken</text>
-  <text x="500" y="260" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="60" font-weight="700" fill="#dc2626">Rs {$amount}</text>
-  <text x="500" y="315" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#111827">{$date}</text>
+  <text x="500" y="70" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="56" font-weight="700" fill="#111827">Name: {$employeeName}</text>
+  <text x="500" y="125" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="50" font-weight="700" fill="#111827">Dept: {$departmentName}</text>
+  <text x="500" y="190" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="62" font-weight="700" fill="#111827">Advance taken</text>
+  <text x="500" y="260" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="76" font-weight="700" fill="#dc2626">Rs {$amount}</text>
+  <text x="500" y="315" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="#111827">{$date}</text>
   <line x1="190" y1="365" x2="810" y2="365" stroke="#111827" stroke-width="5"/>
-  <text x="500" y="415" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="31" font-weight="700" fill="#111827">Total Advance taken this month:</text>
-  <text x="500" y="460" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="#dc2626">Rs {$monthTotal}</text>
+  <text x="500" y="415" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#111827">Total Advance taken this month:</text>
+  <text x="500" y="460" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="58" font-weight="700" fill="#dc2626">Rs {$monthTotal}</text>
 </svg>
 SVG;
     }

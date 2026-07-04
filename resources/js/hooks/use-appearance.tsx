@@ -15,6 +15,9 @@ const DEFAULT_THEME: ThemeSettings = {
     customColor: '#3b82f6', // Default blue color
 };
 
+let isPrintPreviewActive = false;
+let printThemeHandlersInstalled = false;
+
 // Preset theme colors
 export const THEME_COLORS = {
     blue: '#3b82f6',
@@ -110,6 +113,10 @@ const mediaQuery = () => {
 };
 
 const handleSystemThemeChange = () => {
+    if (isPrintPreviewActive || (window as any).__isPrintPreviewActive) {
+        return;
+    }
+
     const themeSettings = getThemeSettings();
     applyTheme(themeSettings);
 };
@@ -139,7 +146,20 @@ const getThemeSettings = (): ThemeSettings => {
             // Fall through to default
         }
     }
-    // In non-demo mode, don't use localStorage - data comes from database
+
+    // In non-demo mode, use database-backed settings from the current Inertia page.
+    const pageProps = (window as any).page?.props;
+    const globalSettings = pageProps?.auth?.user?.role === 'company' && pageProps?.auth?.user?.globalSettings
+        ? pageProps.auth.user.globalSettings
+        : pageProps?.globalSettings;
+
+    if (globalSettings) {
+        return {
+            appearance: globalSettings.themeMode || DEFAULT_THEME.appearance,
+            themeColor: globalSettings.themeColor || DEFAULT_THEME.themeColor,
+            customColor: globalSettings.customColor || DEFAULT_THEME.customColor,
+        };
+    }
     
     return DEFAULT_THEME;
 };
@@ -150,6 +170,29 @@ export function initializeTheme() {
 
     // Add the event listener for system theme changes...
     mediaQuery()?.addEventListener('change', handleSystemThemeChange);
+
+    if (!printThemeHandlersInstalled) {
+        const handleBeforePrint = () => {
+            isPrintPreviewActive = true;
+            (window as any).__isPrintPreviewActive = true;
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark');
+            document.documentElement.style.colorScheme = 'light';
+            document.body.style.colorScheme = 'light';
+        };
+
+        const handleAfterPrint = () => {
+            isPrintPreviewActive = false;
+            (window as any).__isPrintPreviewActive = false;
+            document.documentElement.style.colorScheme = '';
+            document.body.style.colorScheme = '';
+            applyTheme(getThemeSettings());
+        };
+
+        window.addEventListener('beforeprint', handleBeforePrint);
+        window.addEventListener('afterprint', handleAfterPrint);
+        printThemeHandlersInstalled = true;
+    }
 }
 
 export function useAppearance() {

@@ -473,7 +473,7 @@ export default function ActionItems() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('meetings.action-items.index'), { 
               page: 1, 

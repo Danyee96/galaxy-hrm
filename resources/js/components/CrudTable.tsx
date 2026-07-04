@@ -62,8 +62,9 @@ export function CrudTable({
   const { t } = useTranslation();
   const renderSortIcon = (column: TableColumn) => {
     if (!column.sortable) return null;
+    const columnSortField = column.sortField || column.key;
 
-    if (sortField === column.key) {
+    if (sortField === columnSortField) {
       return sortDirection === 'asc' ?
         <ChevronUp className="ml-1 h-4 w-4" /> :
         <ChevronDown className="ml-1 h-4 w-4" />;
@@ -74,7 +75,7 @@ export function CrudTable({
 
   const handleSort = (column: TableColumn) => {
     if (!column.sortable || !onSort) return;
-    onSort(column.key);
+    onSort(column.sortField || column.key);
   };
   const hasAnyActionPermission = actions.some((action) => {
     const permissionKey =

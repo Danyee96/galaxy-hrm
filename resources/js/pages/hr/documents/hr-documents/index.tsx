@@ -446,7 +446,7 @@ export default function HrDocuments() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.documents.hr-documents.index'), { 
               page: 1, 

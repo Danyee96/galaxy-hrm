@@ -51,7 +51,7 @@ class ShiftController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $shifts = $query->paginate($request->per_page ?? 10);
+            $shifts = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/shifts/index', [
                 'shifts' => $shifts,

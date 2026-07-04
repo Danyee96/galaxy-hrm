@@ -19,21 +19,58 @@ use RuntimeException;
 
 class LegacyAttendanceSheetImportService
 {
-    public function import(UploadedFile|string $file, int $creatorId, ?int $branchId = null): array
+    public function missingEmployeeRows(UploadedFile|string $file): array
     {
-        $path = $file instanceof UploadedFile ? $file->getRealPath() : $file;
-        $fileName = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file);
+        [$rows, $headers] = $this->sheetRows($file);
+        $missing = [];
 
-        if (! $path || ! is_file($path)) {
-            throw new RuntimeException('Attendance sheet file could not be read.');
+        foreach ($rows as $index => $row) {
+            $line = $index + 2;
+            $data = $this->combine($headers, $row);
+            $employeeName = $this->cleanName((string) ($data['name'] ?? ''));
+
+            if (! $this->needsEmployeeMapping($employeeName, $data)) {
+                continue;
+            }
+
+            $employeeNo = trim((string) ($data['emp_no'] ?? $data['ac_no'] ?? ''));
+            $date = null;
+
+            try {
+                $date = $this->parseDate((string) ($data['date'] ?? ''));
+            } catch (\Throwable) {
+                $date = trim((string) ($data['date'] ?? ''));
+            }
+
+            $suggestedEmployee = $employeeNo !== ''
+                ? Employee::with('user:id,name')
+                    ->whereIn('created_by', getCompanyAndUsersId())
+                    ->where(function ($query) use ($employeeNo) {
+                        $query->where('employee_id', $employeeNo)
+                            ->orWhere('biometric_emp_id', $employeeNo);
+                    })
+                    ->first()
+                : null;
+
+            $missing[] = [
+                'line' => $line,
+                'employee_no' => $employeeNo,
+                'sheet_name' => $employeeName,
+                'department' => $this->cleanName((string) ($data['no'] ?? '')),
+                'date' => $date,
+                'clock_in' => trim((string) ($data['clock_in'] ?? '')),
+                'clock_out' => trim((string) ($data['clock_out'] ?? '')),
+                'suggested_employee_id' => $suggestedEmployee?->user_id,
+                'suggested_employee_name' => $suggestedEmployee?->user?->name,
+            ];
         }
 
-        $rows = $this->rows($path, strtolower(pathinfo($fileName, PATHINFO_EXTENSION)));
-        if (count($rows) < 2) {
-            throw new RuntimeException('The sheet does not contain attendance rows.');
-        }
+        return $missing;
+    }
 
-        $headers = array_map(fn ($header) => $this->normalizeHeader($header), array_shift($rows));
+    public function import(UploadedFile|string $file, int $creatorId, ?int $branchId = null, array $employeeMappings = [], array $ignoredLines = []): array
+    {
+        [$rows, $headers, $fileName] = $this->sheetRows($file);
 
         if (! in_array('emp_no', $headers, true) && ! in_array('ac_no', $headers, true)) {
             throw new RuntimeException('Missing required sheet column: emp_no or ac_no');
@@ -59,64 +96,73 @@ class LegacyAttendanceSheetImportService
             'errors' => [],
         ];
         $seenEmployees = [];
+        $ignoredLines = array_flip(array_map('strval', $ignoredLines));
 
-        DB::transaction(function () use ($rows, $headers, $creator, $branch, $fileName, &$stats, &$seenEmployees) {
+        DB::transaction(function () use ($rows, $headers, $creator, $branch, $fileName, $employeeMappings, $ignoredLines, &$stats, &$seenEmployees) {
             foreach ($rows as $index => $row) {
                 $stats['rows']++;
                 $line = $index + 2;
                 $data = $this->combine($headers, $row);
 
                 try {
+                    if (isset($ignoredLines[(string) $line])) {
+                        $stats['skipped']++;
+                        continue;
+                    }
+
                     $employeeNo = trim((string) ($data['emp_no'] ?? $data['ac_no'] ?? ''));
                     $departmentName = $this->cleanName((string) ($data['no'] ?? '')) ?: 'Unassigned';
                     $employeeName = $this->cleanName((string) ($data['name'] ?? ''));
 
-                    if ($employeeNo === '' || $employeeName === '' || is_numeric($employeeName)) {
+                    if ($employeeNo === '' && ! isset($employeeMappings[$line])) {
                         $stats['skipped']++;
                         continue;
                     }
 
                     $date = $this->parseDate((string) ($data['date'] ?? ''));
+                    $mappedEmployeeId = $employeeMappings[$line] ?? $employeeMappings[(string) $line] ?? null;
+                    $badEmployeeName = $employeeName === '' || is_numeric($employeeName);
+                    $employee = null;
 
-                    $department = Department::where('branch_id', $branch->id)
-                        ->where('name', $departmentName)
-                        ->first();
+                    if ($badEmployeeName) {
+                        if (! $this->hasAttendance($data) || ! $mappedEmployeeId) {
+                            $stats['skipped']++;
+                            continue;
+                        }
 
-                    if (! $department) {
-                        $department = Department::create([
-                            'name' => $departmentName,
-                            'branch_id' => $branch->id,
-                            'description' => 'Imported from '.$fileName,
-                            'status' => 'active',
-                            'created_by' => $creator->id,
-                        ]);
-                        $stats['departments_created']++;
-                    }
+                        $employee = Employee::where('user_id', (int) $mappedEmployeeId)
+                            ->whereIn('created_by', getCompanyAndUsersId())
+                            ->first();
 
-                    $employee = Employee::where('employee_id', $employeeNo)
-                        ->orWhere('biometric_emp_id', $employeeNo)
-                        ->first();
+                        if (! $employee) {
+                            throw new RuntimeException('Selected employee could not be found.');
+                        }
+                    } else {
+                        $department = Department::where('branch_id', $branch->id)
+                            ->where('name', $departmentName)
+                            ->first();
 
-                    if ($employee && $employee->employee_id !== $employeeNo) {
-                        $conflict = Employee::where('employee_id', $employeeNo)->where('id', '<>', $employee->id)->exists();
-                        if (! $conflict) {
-                            $employee->update(['employee_id' => $employeeNo]);
+                        if (! $department) {
+                            $department = Department::create([
+                                'name' => $departmentName,
+                                'branch_id' => $branch->id,
+                                'description' => 'Imported from '.$fileName,
+                                'status' => 'active',
+                                'created_by' => $creator->id,
+                            ]);
+                            $stats['departments_created']++;
+                        }
+
+                        $employee = Employee::where('employee_id', $employeeNo)
+                            ->orWhere('biometric_emp_id', $employeeNo)
+                            ->first();
+
+                        if (! $employee) {
+                            $employee = $this->createEmployee($employeeNo, $employeeName, $department->id, $branch->id, $creator->id);
+                            $stats['employees_created']++;
                         }
                     }
-
-                    if (! $employee) {
-                        $employee = $this->createEmployee($employeeNo, $employeeName, $department->id, $branch->id, $creator->id);
-                        $stats['employees_created']++;
-                    } elseif (! isset($seenEmployees[$employeeNo])) {
-                        $employee->update([
-                            'department_id' => $department->id,
-                            'branch_id' => $branch->id,
-                            'employee_status' => $employee->employee_status ?: 'active',
-                        ]);
-                        $employee->user?->update(['name' => $employeeName]);
-                        $stats['employees_updated']++;
-                    }
-                    $seenEmployees[$employeeNo] = true;
+                    $seenEmployees[$employeeNo ?: $employee->employee_id] = true;
 
                     $attributes = [
                         'shift_id' => $employee->shift_id,
@@ -142,7 +188,7 @@ class LegacyAttendanceSheetImportService
                     ];
 
                     if (Schema::hasColumn('attendance_records', 'biometric_id')) {
-                        $attributes['biometric_id'] = $employeeNo;
+                        $attributes['biometric_id'] = $employeeNo ?: $employee->employee_id;
                     }
 
                     $record = AttendanceRecord::where('employee_id', $employee->user_id)
@@ -185,6 +231,42 @@ class LegacyAttendanceSheetImportService
             'csv' => $this->csvRows($path),
             default => $this->legacyXlsRows($path),
         };
+    }
+
+    private function sheetRows(UploadedFile|string $file): array
+    {
+        $path = $file instanceof UploadedFile ? $file->getRealPath() : $file;
+        $fileName = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file);
+
+        if (! $path || ! is_file($path)) {
+            throw new RuntimeException('Attendance sheet file could not be read.');
+        }
+
+        $rows = $this->rows($path, strtolower(pathinfo($fileName, PATHINFO_EXTENSION)));
+        if (count($rows) < 2) {
+            throw new RuntimeException('The sheet does not contain attendance rows.');
+        }
+
+        $headers = array_map(fn ($header) => $this->normalizeHeader($header), array_shift($rows));
+
+        return [$rows, $headers, $fileName];
+    }
+
+    private function needsEmployeeMapping(string $employeeName, array $data): bool
+    {
+        return ($employeeName === '' || is_numeric($employeeName)) && $this->hasAttendance($data);
+    }
+
+    private function hasAttendance(array $data): bool
+    {
+        foreach (['clock_in', 'clock_out', 'work_time', 'ot_time', 'late', 'early'] as $field) {
+            $value = trim((string) ($data[$field] ?? ''));
+            if ($value !== '' && $value !== '-' && $value !== '0' && $value !== '0:00' && $value !== '00:00') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function csvRows(string $path): array

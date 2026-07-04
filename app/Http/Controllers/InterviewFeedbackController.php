@@ -41,7 +41,7 @@ class InterviewFeedbackController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $interviewFeedback = $query->paginate($request->per_page ?? 10);
+            $interviewFeedback = $query->paginate($request->per_page ?? 50);
 
             // Add interviewer names to each feedback
             $interviewFeedback->getCollection()->transform(function ($feedback) {

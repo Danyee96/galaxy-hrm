@@ -354,7 +354,7 @@ export default function PerformanceIndicators() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.performance.indicators.index'), { 
               page: 1, 

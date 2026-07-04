@@ -34,7 +34,7 @@ class CustomQuestionController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $customQuestions = $query->paginate($request->per_page ?? 10);
+            $customQuestions = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/recruitment/custom-questions/index', [
                 'customQuestions' => $customQuestions,

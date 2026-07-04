@@ -45,7 +45,7 @@ class PlanOrderController extends BaseController
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        $perPage = $request->get('per_page', 10);
+        $perPage = $request->get('per_page', 50);
         $planOrders = $query->paginate($perPage);
 
         // Always use super admin currency for plan pricing

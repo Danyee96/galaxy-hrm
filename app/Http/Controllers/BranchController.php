@@ -37,7 +37,7 @@ class BranchController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $branches = $query->paginate($request->per_page ?? 10);
+            $branches = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/branches/index', [
                 'branches' => $branches,

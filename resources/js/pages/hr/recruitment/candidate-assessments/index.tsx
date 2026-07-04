@@ -7,6 +7,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus } from 'lucide-react';
@@ -305,7 +306,7 @@ export default function CandidateAssessments() {
   const employeeOptions = [
     ...(employees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: emp.name
+      label: formatEmployeeOptionLabel(emp)
     }))
   ];
 
@@ -347,7 +348,7 @@ export default function CandidateAssessments() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.recruitment.candidate-assessments.index'), { 
               page: 1, 

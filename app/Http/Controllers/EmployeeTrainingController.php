@@ -88,10 +88,10 @@ class EmployeeTrainingController extends Controller
             // Add assessment results count
             $query->withCount(['assessmentResults']);
 
-            $employeeTrainings = $query->paginate($request->per_page ?? 10);
+            $employeeTrainings = $query->paginate($request->per_page ?? 50);
 
             // Get employees for filter dropdown
-            $employees = User::with('employee')
+            $employees = User::with('employee.department')
                 ->where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')

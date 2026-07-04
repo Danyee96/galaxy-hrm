@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { router, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 
 export default function PayrollFines() {
   const { t } = useTranslation();
@@ -24,7 +25,7 @@ export default function PayrollFines() {
 
   const employeeOptions = (employees || []).map((employee: any) => ({
     value: String(employee.id),
-    label: employee.name,
+    label: formatEmployeeOptionLabel(employee),
   }));
 
   const formatMoney = (value: number | string | null | undefined) => {

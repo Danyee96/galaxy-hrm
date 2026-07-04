@@ -405,7 +405,7 @@ export default function OfferTemplates() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.recruitment.offer-templates.index'), { 
               page: 1, 

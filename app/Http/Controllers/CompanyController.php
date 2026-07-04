@@ -46,7 +46,7 @@ class CompanyController extends Controller
         $query->orderBy($sortField, $sortDirection);
 
         // Get paginated results
-        $perPage = $request->input('per_page', 10);
+        $perPage = $request->input('per_page', 50);
         $companies = $query->paginate($perPage)->withQueryString();
 
         // Transform data for frontend

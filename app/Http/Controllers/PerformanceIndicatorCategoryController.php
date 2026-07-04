@@ -43,7 +43,7 @@ class PerformanceIndicatorCategoryController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $categories = $query->paginate($request->per_page ?? 10);
+            $categories = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/performance/indicator-categories/index', [
                 'categories' => $categories,

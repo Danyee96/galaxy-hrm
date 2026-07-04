@@ -60,7 +60,7 @@ class AttendanceRegularizationController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $regularizations = $query->paginate($request->per_page ?? 10);
+            $regularizations = $query->paginate($request->per_page ?? 50);
 
             // Get employees for filter dropdown
             $employees = User::where('type', 'employee')
@@ -69,7 +69,7 @@ class AttendanceRegularizationController extends Controller
 
             // Get attendance records for form dropdown
             $attendanceRecords = AttendanceRecord::whereIn('created_by', getCompanyAndUsersId())
-                ->with('employee')
+                ->with('employee.employee.department')
                 ->orderBy('date', 'desc')
                 ->take(50)
                 ->get();
@@ -96,7 +96,7 @@ class AttendanceRegularizationController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))
@@ -107,6 +107,7 @@ class AttendanceRegularizationController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'employee_id' => $user->employee->employee_id ?? '',
+                    'department_name' => $user->employee?->department?->name ?? '',
                 ];
             });
         return $employees;
@@ -242,7 +243,7 @@ class AttendanceRegularizationController extends Controller
         try {
             // Get attendance records for the last 30 days
             $attendanceRecords = AttendanceRecord::where('employee_id', $employeeId)
-                ->with('employee')
+                ->with('employee.employee.department')
                 ->whereDate('date', '>=', now()->subDays(30))
                 ->orderBy('date', 'desc')
                 ->get([

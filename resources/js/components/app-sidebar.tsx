@@ -7,7 +7,7 @@ import { useSidebarSettings } from '@/contexts/SidebarContext';
 import { useBrand } from '@/contexts/BrandContext';
 import { type NavItem } from '@/types';
 import { usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, ShoppingBag, Users, Tag, FileIcon, Settings, BarChart, Barcode, FileText, Briefcase, CheckSquare, Calendar, CreditCard, Ticket, Gift, DollarSign, MessageSquare, CalendarDays, Palette, Image, Mail, Mail as VCard, ChevronDown, Building2, Globe, Clock, Timer, Coins, Fingerprint } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, ShoppingBag, Users, Tag, FileIcon, Settings, BarChart, Barcode, FileText, Briefcase, CheckSquare, Calendar, CreditCard, Ticket, Gift, DollarSign, MessageSquare, CalendarDays, Palette, Image, Mail, Mail as VCard, ChevronDown, Building2, Globe, Clock, Timer, Coins, Fingerprint, Database } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import AppLogo from './app-logo';
@@ -118,6 +118,11 @@ export function AppSidebar() {
             title: t('Settings'),
             href: route('settings'),
             icon: Settings,
+        },
+        {
+            title: t('Backup & Restore'),
+            href: route('system-backups.index'),
+            icon: Database,
         }
     ];
 
@@ -188,14 +193,6 @@ export function AppSidebar() {
             });
         }
 
-        if (hasPermission(permissions, 'manage-employee-bonuses')) {
-            items.push({
-                title: t('Bonus Management'),
-                href: route('hr.bonus-management.index'),
-                icon: Gift,
-            });
-        }
-
         items.push({
             title: t('Salary Advance'),
             href: route('hr.advance-salaries.index'),
@@ -213,6 +210,14 @@ export function AppSidebar() {
                 title: t('Reports'),
                 href: route('hr.reports.index'),
                 icon: BarChart,
+            });
+        }
+
+        if (hasPermission(permissions, 'manage-settings')) {
+            items.push({
+                title: t('Backup & Restore'),
+                href: route('system-backups.index'),
+                icon: Database,
             });
         }
 
@@ -294,13 +299,6 @@ export function AppSidebar() {
             hrChildren.push({
                 title: t('Awards'),
                 href: route('hr.awards.index')
-            });
-        }
-
-        if (hasPermission(permissions, 'manage-employee-bonuses')) {
-            hrChildren.push({
-                title: t('Bonus Management'),
-                href: route('hr.bonus-management.index')
             });
         }
 
@@ -1050,6 +1048,12 @@ export function AppSidebar() {
         }
 
         if (hasPermission(permissions, 'manage-settings')) {
+            items.push({
+                title: t('Backup & Restore'),
+                href: route('system-backups.index'),
+                icon: Database,
+            });
+
             items.push({
                 title: t('Settings'),
                 href: route('settings'),

@@ -150,6 +150,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+                'attendance_import_mapping' => $request->session()->get('attendance_import_mapping'),
             ],
             'globalSettings' => $globalSettings,
             'is_demo' => config('app.is_demo'),

@@ -51,7 +51,7 @@ class LeavePolicyController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $leavePolicies = $query->paginate($request->per_page ?? 10);
+            $leavePolicies = $query->paginate($request->per_page ?? 50);
 
             // Get leave types for filter dropdown
             $leaveTypes = LeaveType::whereIn('created_by', getCompanyAndUsersId())

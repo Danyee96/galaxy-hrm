@@ -33,7 +33,7 @@ class CustomPageController extends Controller
             $query->ordered();
         }
 
-        $pages = $query->paginate($request->get('per_page', 10))
+        $pages = $query->paginate($request->get('per_page', 50))
                       ->withQueryString();
 
         return Inertia::render('landing-page/custom-pages/index', [

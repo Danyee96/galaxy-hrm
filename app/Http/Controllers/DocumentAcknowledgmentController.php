@@ -56,7 +56,7 @@ class DocumentAcknowledgmentController extends Controller
                 ->update(['status' => 'Overdue']);
 
             $query->orderBy('id', 'desc');
-            $documentAcknowledgments = $query->paginate($request->per_page ?? 10);
+            $documentAcknowledgments = $query->paginate($request->per_page ?? 50);
 
             $documents = HrDocument::whereIn('created_by', getCompanyAndUsersId())
                 ->where('requires_acknowledgment', true)

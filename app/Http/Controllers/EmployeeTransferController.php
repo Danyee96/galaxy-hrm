@@ -93,10 +93,10 @@ class EmployeeTransferController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $transfers = $query->paginate($request->per_page ?? 10);
+            $transfers = $query->paginate($request->per_page ?? 50);
 
             // Get employees for filter dropdown
-            $employees = User::with('employee')
+            $employees = User::with('employee.department')
                 ->where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
@@ -152,7 +152,7 @@ class EmployeeTransferController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))
@@ -190,7 +190,7 @@ class EmployeeTransferController extends Controller
         }
 
         // Check if employee belongs to current company
-        $employee = User::with('employee')->find($request->employee_id);
+        $employee = User::with('employee.department')->find($request->employee_id);
         if (!$employee || !in_array($employee->created_by, getCompanyAndUsersId())) {
             return redirect()->back()->with('error', __('Invalid employee selected'));
         }
@@ -314,24 +314,7 @@ class EmployeeTransferController extends Controller
             $transferData['approved_by'] = auth()->id();
             $transferData['approved_at'] = now();
 
-            // If approved and effective date has passed or is today, update employee details
-            if ($request->status === 'approved') {
-                $user = User::with('employee')->find($request->employee_id);
-
-                if ($user && $user->employee) {
-                    if (isset($transferData['to_branch_id'])) {
-                        $user->employee->branch_id = $transferData['to_branch_id'];
-                    }
-                    if (isset($transferData['to_department_id'])) {
-                        $user->employee->department_id = $transferData['to_department_id'];
-                    }
-                    if (isset($transferData['to_designation_id'])) {
-                        $user->employee->designation_id = $transferData['to_designation_id'];
-                    }
-
-                    $user->employee->save();
-                }
-            }
+            // Transfer approvals do not mutate employee master data. Use Employees > Edit.
         }
 
         $transfer->update($transferData);
@@ -391,23 +374,7 @@ class EmployeeTransferController extends Controller
 
         $transfer->update($updateData);
 
-        // If effective date has passed or is today, update employee details
-
-        $user = User::with('employee')->find($transfer->employee_id);
-
-        if ($user && $user->employee) {
-            if ($transfer->to_branch_id) {
-                $user->employee->branch_id = $transfer->to_branch_id;
-            }
-            if ($transfer->to_department_id) {
-                $user->employee->department_id = $transfer->to_department_id;
-            }
-            if ($transfer->to_designation_id) {
-                $user->employee->designation_id = $transfer->to_designation_id;
-            }
-
-            $user->employee->save();
-        }
+        // Transfer approvals do not mutate employee master data. Use Employees > Edit.
 
 
         return redirect()->back()->with('success', __('Transfer approved successfully'));

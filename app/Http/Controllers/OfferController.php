@@ -43,7 +43,7 @@ class OfferController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $offers = $query->paginate($request->per_page ?? 10);
+            $offers = $query->paginate($request->per_page ?? 50);
 
             $candidates = Candidate::with('job')
                 ->whereIn('created_by', getCompanyAndUsersId())

@@ -37,7 +37,7 @@ class DocumentTemplateController extends Controller
         }
 
         $query->orderBy('is_default', 'desc')->orderBy('created_at', 'desc');
-        $documentTemplates = $query->paginate($request->per_page ?? 10);
+        $documentTemplates = $query->paginate($request->per_page ?? 50);
 
         $categories = DocumentCategory::whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')

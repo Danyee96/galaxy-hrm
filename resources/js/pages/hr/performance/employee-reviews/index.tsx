@@ -8,6 +8,7 @@ import { CrudTable } from '@/components/CrudTable';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus, ClipboardList } from 'lucide-react';
@@ -322,7 +323,7 @@ export default function EmployeeReviews() {
     { value: '', label: t('Select Employee'), disabled: true },
     ...(employees || []).map((employee: any) => ({
       value: employee.id.toString(),
-      label: `${employee.name}  (${employee.employee_id})`
+      label: formatEmployeeOptionLabel(employee)
     }))
   ];
 
@@ -406,7 +407,7 @@ export default function EmployeeReviews() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.performance.employee-reviews.index'), { 
               page: 1, 

@@ -58,7 +58,7 @@ class ReferralController extends Controller
 
         $payoutRequests = PayoutRequest::with('company')
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(50);
         // Always use super admin currency for plan pricing
         $superAdmin = User::where('type', 'superadmin')->first();
         $superAdminSettings = settings($superAdmin->id);
@@ -102,7 +102,7 @@ class ReferralController extends Controller
 
         $payoutRequests = PayoutRequest::where('company_id', $user->id)
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(50);
 
         // Get referred users count (users who used this company's referral code)
         $referredUsersCount = User::where('used_referral_code', $user->referral_code)->count();

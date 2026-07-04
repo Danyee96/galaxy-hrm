@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EmployeeBonus;
 use App\Models\PayrollRun;
 use App\Models\User;
 use App\Services\WorkingScheduleService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class PayrollRunController extends Controller
@@ -52,15 +55,22 @@ class PayrollRunController extends Controller
                 $query->orderBy('pay_period_start', 'desc');
             }
 
-            $payrollRuns = $query->paginate($request->per_page ?? 10);
+            $payrollRuns = $query->paginate($request->per_page ?? 50);
             $employees = User::where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->whereHas('employee', function ($q) {
                     $q->whereIn('employee_status', ['active', 'probation']);
                 })
-                ->orderByRaw("CAST((select employee_id from employees where employees.user_id = users.id limit 1) AS UNSIGNED) asc")
+                ->with('employee.department')
+                ->orderByRaw($this->userEmployeeIdSortExpression().' asc')
                 ->orderBy('name')
-                ->get(['id', 'name']);
+                ->get(['id', 'name'])
+                ->map(fn (User $employee) => [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'employee_id' => $employee->employee?->employee_id,
+                    'department_name' => $employee->employee?->department?->name,
+                ]);
 
             return Inertia::render('hr/payroll-runs/index', [
                 'payrollRuns' => $payrollRuns,
@@ -75,34 +85,7 @@ class PayrollRunController extends Controller
     public function show($payrollRunId)
     {
         if (Auth::user()->can('view-payroll-runs')) {
-            $payrollRun = PayrollRun::where('id', $payrollRunId)
-                ->whereIn('created_by', getCompanyAndUsersId())
-                ->with([
-                    'payrollEntries' => function ($query) {
-                        $query->select([
-                            'id',
-                            'payroll_run_id',
-                            'employee_id',
-                            'basic_salary',
-                            'net_pay',
-                            'unpaid_leave_days',
-                            'absent_days',
-                            'bonus_amount',
-                            'advance_deduction',
-                            'absence_deduction',
-                            'late_penalty',
-                            'other_deductions',
-                            'deductions_breakdown',
-                        ])->with([
-                            'employee:id,name',
-                            'employee.employee:id,user_id,employee_id,department_id',
-                            'employee.employee.department:id,name',
-                        ])
-                            ->orderByRaw("CAST((select employee_id from employees where employees.user_id = payroll_entries.employee_id limit 1) AS UNSIGNED) asc")
-                            ->orderBy('id');
-                    },
-                ])
-                ->first();
+            $payrollRun = $this->payrollRunForOutput($payrollRunId);
 
             if (! $payrollRun) {
                 return redirect()->back()->with('error', __('Payroll run not found.'));
@@ -121,6 +104,127 @@ class PayrollRunController extends Controller
         }
     }
 
+    public function downloadPdf($payrollRunId)
+    {
+        if (! Auth::user()->can('view-payroll-runs')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $payrollRun = $this->payrollRunForOutput($payrollRunId);
+
+        if (! $payrollRun) {
+            return redirect()->back()->with('error', __('Payroll run not found.'));
+        }
+
+        $pdf = Pdf::loadView('exports.payroll-run-pdf', [
+            'payrollRun' => $payrollRun,
+        ])->setPaper('a4', 'portrait');
+
+        $filename = Str::slug($payrollRun->title ?: 'payroll-run').'-'.$payrollRun->id.'.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    private function payrollRunForOutput($payrollRunId): ?PayrollRun
+    {
+        $payrollRun = PayrollRun::where('id', $payrollRunId)
+            ->whereIn('created_by', getCompanyAndUsersId())
+            ->with([
+                'payrollEntries' => function ($query) {
+                    $query->select([
+                        'id',
+                        'payroll_run_id',
+                        'employee_id',
+                        'basic_salary',
+                        'gross_pay',
+                        'total_deductions',
+                        'net_pay',
+                        'working_days',
+                        'present_days',
+                        'unpaid_leave_days',
+                        'absent_days',
+                        'bonus_amount',
+                        'advance_deduction',
+                        'absence_deduction',
+                        'late_penalty',
+                        'other_deductions',
+                        'deductions_breakdown',
+                    ])->with([
+                        'employee:id,name',
+                        'employee.employee:id,user_id,employee_id,department_id',
+                        'employee.employee.department:id,name',
+                    ])
+                        ->orderByRaw($this->userEmployeeIdSortExpression('payroll_entries.employee_id').' asc')
+                        ->orderBy('id');
+                },
+            ])
+            ->first();
+
+        if (! $payrollRun) {
+            return null;
+        }
+
+        $payrollRun->syncFineDeductionsToEntries();
+        $payrollRun->refresh()->load([
+            'payrollEntries' => function ($query) {
+                $query->select([
+                    'id',
+                    'payroll_run_id',
+                    'employee_id',
+                    'basic_salary',
+                    'gross_pay',
+                    'total_deductions',
+                    'net_pay',
+                    'working_days',
+                    'present_days',
+                    'unpaid_leave_days',
+                    'absent_days',
+                    'bonus_amount',
+                    'advance_deduction',
+                    'absence_deduction',
+                    'late_penalty',
+                    'other_deductions',
+                    'deductions_breakdown',
+                ])->with([
+                    'employee:id,name',
+                    'employee.employee:id,user_id,employee_id,department_id',
+                    'employee.employee.department:id,name',
+                ])
+                    ->orderByRaw($this->userEmployeeIdSortExpression('payroll_entries.employee_id').' asc')
+                    ->orderBy('id');
+            },
+        ]);
+        $this->attachProfileBonusAmounts($payrollRun);
+
+        return $payrollRun;
+    }
+
+    private function attachProfileBonusAmounts(PayrollRun $payrollRun): void
+    {
+        $employeeIds = $payrollRun->payrollEntries
+            ->pluck('employee_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($employeeIds->isEmpty()) {
+            return;
+        }
+
+        $profileBonuses = EmployeeBonus::whereIn('employee_id', $employeeIds)
+            ->where('bonus_type', 'custom')
+            ->where('notes', 'Employee profile bonus')
+            ->orderByDesc('bonus_date')
+            ->orderByDesc('id')
+            ->get(['employee_id', 'amount'])
+            ->unique('employee_id')
+            ->keyBy('employee_id');
+
+        $payrollRun->payrollEntries->each(function ($entry) use ($profileBonuses) {
+            $entry->setAttribute('profile_bonus_amount', (float) ($profileBonuses->get($entry->employee_id)?->amount ?? 0));
+        });
+    }
+
     public function store(Request $request)
     {
         if (Auth::user()->can('create-payroll-runs')) {
@@ -134,16 +238,6 @@ class PayrollRunController extends Controller
             $validated['status'] = 'draft';
             $validated['pay_date'] = $validated['pay_period_end'];
             $validated['payroll_frequency'] = $request->input('payroll_frequency', 'monthly');
-
-            // Check if payroll run already exists for this period
-            $exists = PayrollRun::where('pay_period_start', $validated['pay_period_start'])
-                ->where('pay_period_end', $validated['pay_period_end'])
-                ->whereIn('created_by', getCompanyAndUsersId())
-                ->exists();
-
-            if ($exists) {
-                return redirect()->back()->with('error', __('Payroll run already exists for this period.'));
-            }
 
             PayrollRun::create($validated);
 

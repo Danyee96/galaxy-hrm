@@ -27,6 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Add event listener for theme changes
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if ((window as any).__isPrintPreviewActive) {
+        return;
+    }
+
     // Re-apply theme when system preference changes
     const savedTheme = localStorage.getItem('themeSettings');
     if (savedTheme) {

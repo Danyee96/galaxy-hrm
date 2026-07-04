@@ -146,6 +146,70 @@ class PayrollRun extends BaseModel
         $this->calculateTotals();
     }
 
+    public function syncFineDeductionsToEntries(?array $employeeIds = null): void
+    {
+        if (! $this->exists) {
+            return;
+        }
+
+        $entries = $this->payrollEntries();
+
+        if (! empty($employeeIds)) {
+            $entries->whereIn('employee_id', array_map('intval', $employeeIds));
+        }
+
+        $entries->get()->each(function (PayrollEntry $entry) {
+            $this->syncFineDeductionToEntry($entry);
+        });
+
+        $this->calculateTotals();
+    }
+
+    private function syncFineDeductionToEntry(PayrollEntry $entry): void
+    {
+        $fineRecords = PayrollFine::where('employee_id', $entry->employee_id)
+            ->whereIn('created_by', getCompanyAndUsersId())
+            ->whereBetween('fine_date', [$this->pay_period_start, $this->pay_period_end])
+            ->orderBy('fine_date')
+            ->orderBy('id')
+            ->get();
+
+        $newFineAmount = round($fineRecords->sum(fn ($fine) => (float) $fine->amount), 2);
+        $fineNotes = $fineRecords
+            ->filter(fn ($fine) => ! empty($fine->notes))
+            ->map(fn ($fine) => $fine->fine_date?->toDateString().': '.$fine->notes)
+            ->values()
+            ->all();
+
+        $breakdown = $entry->deductions_breakdown ?: [];
+        $oldFineAmount = round((float) ($breakdown['Manual Fine Amount'] ?? 0), 2);
+        $difference = round($newFineAmount - $oldFineAmount, 2);
+
+        if ($difference == 0.0 && $breakdown === $this->fineBreakdown($breakdown, $newFineAmount, $fineNotes)) {
+            return;
+        }
+
+        $entry->deductions_breakdown = $this->fineBreakdown($breakdown, $newFineAmount, $fineNotes);
+        $entry->other_deductions = round(max(0, (float) $entry->other_deductions - $oldFineAmount + $newFineAmount), 2);
+        $entry->total_deductions = round((float) $entry->total_deductions + $difference, 2);
+        $entry->net_pay = round((float) $entry->net_pay - $difference, 2);
+        $entry->save();
+    }
+
+    private function fineBreakdown(array $breakdown, float $fineAmount, array $fineNotes): array
+    {
+        $breakdown['Manual Fine Amount'] = $fineAmount;
+        $breakdown['Manual Fine Notes'] = $fineNotes;
+
+        return array_filter($breakdown, function ($value) {
+            if (is_array($value)) {
+                return ! empty($value);
+            }
+
+            return $value !== null && $value !== '' && $value !== 0 && $value !== 0.0 && $value !== '0';
+        });
+    }
+
     /**
      * Process payroll for all employees.
      */

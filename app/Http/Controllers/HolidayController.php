@@ -86,7 +86,7 @@ class HolidayController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $holidays = $query->paginate($request->per_page ?? 10);
+            $holidays = $query->paginate($request->per_page ?? 50);
 
             // Get branches for filter dropdown
             $branches = Branch::whereIn('created_by', getCompanyAndUsersId())

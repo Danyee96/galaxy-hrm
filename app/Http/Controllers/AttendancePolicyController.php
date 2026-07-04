@@ -47,7 +47,7 @@ class AttendancePolicyController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $attendancePolicies = $query->paginate($request->per_page ?? 10);
+            $attendancePolicies = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/attendance-policies/index', [
                 'attendancePolicies' => $attendancePolicies,

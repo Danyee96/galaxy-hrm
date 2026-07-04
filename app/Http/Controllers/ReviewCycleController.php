@@ -52,7 +52,7 @@ class ReviewCycleController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $reviewCycles = $query->paginate($request->per_page ?? 10);
+            $reviewCycles = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/performance/review-cycles/index', [
                 'reviewCycles' => $reviewCycles,

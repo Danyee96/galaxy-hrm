@@ -278,6 +278,37 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
+const getEmployeeDepartmentName = (employee: any): string => {
+  return String(
+    employee?.department_name
+    || employee?.department?.name
+    || employee?.employee?.department?.name
+    || employee?.department
+    || ''
+  ).trim();
+};
+
+const getEmployeeCode = (employee: any): string => {
+  return String(
+    employee?.employee_code
+    || employee?.employee_id
+    || employee?.employee?.employee_id
+    || ''
+  ).trim();
+};
+
+const formatEmployeeOptionLabel = (employee: any): string => {
+  const fullName = [employee?.first_name, employee?.last_name].filter(Boolean).join(' ');
+  const name = String(employee?.name || employee?.employee?.name || fullName || '').trim();
+  const code = getEmployeeCode(employee);
+  const department = getEmployeeDepartmentName(employee);
+
+  return [name || '-', code, department]
+    .filter(Boolean)
+    .map((part, index) => index === 0 ? part : `(${part})`)
+    .join(' ');
+};
+
 export {
   // formatDate,
   // formatTime,
@@ -292,4 +323,7 @@ export {
   isSaaS,
   setCookie,
   getCookie,
+  formatEmployeeOptionLabel,
+  getEmployeeCode,
+  getEmployeeDepartmentName,
 }

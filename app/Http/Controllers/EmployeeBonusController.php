@@ -32,8 +32,18 @@ class EmployeeBonusController extends Controller
             $query->whereDate('bonus_date', '<=', $request->date_to);
         }
 
-        $bonuses = $query->orderByDesc('bonus_date')->paginate($request->per_page ?? 10);
-        $employees = User::emp()->whereIn('created_by', getCompanyAndUsersId())->where('status', 'active')->get(['id', 'name']);
+        $bonuses = $query->orderByDesc('bonus_date')->paginate($request->per_page ?? 50);
+        $employees = User::emp()
+            ->whereIn('created_by', getCompanyAndUsersId())
+            ->where('status', 'active')
+            ->with('employee.department')
+            ->get(['id', 'name'])
+            ->map(fn (User $employee) => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'employee_id' => $employee->employee?->employee_id,
+                'department_name' => $employee->employee?->department?->name,
+            ]);
 
         return Inertia::render('hr/bonus-management/index', [
             'bonuses' => $bonuses,

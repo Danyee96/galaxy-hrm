@@ -49,7 +49,7 @@ class MeetingController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $meetings = $query->paginate($request->per_page ?? 10);
+            $meetings = $query->paginate($request->per_page ?? 50);
 
             $meetingTypes = MeetingType::whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
@@ -91,7 +91,7 @@ class MeetingController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

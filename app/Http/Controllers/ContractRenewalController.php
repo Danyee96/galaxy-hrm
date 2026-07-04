@@ -33,7 +33,7 @@ class ContractRenewalController extends Controller
         }
 
         $query->orderBy('id', 'desc');
-        $contractRenewals = $query->paginate($request->per_page ?? 10);
+        $contractRenewals = $query->paginate($request->per_page ?? 50);
 
         $contracts = EmployeeContract::with('employee')
             ->whereIn('created_by', getCompanyAndUsersId())

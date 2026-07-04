@@ -44,11 +44,11 @@ class CandidateAssessmentController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $assessments = $query->paginate($request->per_page ?? 10);
+            $assessments = $query->paginate($request->per_page ?? 50);
 
             $candidates = Candidate::whereIn('created_by', getCompanyAndUsersId())->where('is_employee',0)->get();
 
-            $employees = User::with('employee')
+            $employees = User::with('employee.department')
                 ->whereIn('type', ['manager', 'hr', 'employee'])
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')

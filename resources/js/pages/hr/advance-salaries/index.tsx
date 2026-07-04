@@ -14,6 +14,7 @@ import { toast } from '@/components/custom-toast';
 import { router, usePage } from '@inertiajs/react';
 import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Download, Forward, Pencil, Plus, Search, Share2, Trash2, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 
 const RECENT_ADVANCE_STORAGE_KEY = 'hr.recentAdvanceReceipt';
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -46,7 +47,7 @@ export default function AdvanceSalaries() {
 
   const employeeOptions = (employees || []).map((employee: any) => ({
     value: String(employee.id),
-    label: employee.employee_code ? `${employee.employee_code} - ${employee.name}` : employee.name,
+    label: formatEmployeeOptionLabel(employee),
   }));
   const visibleEmployeeIds = (advanceEmployees?.data || []).map((employee: any) => Number(employee.id));
   const allVisibleSelected = visibleEmployeeIds.length > 0 && visibleEmployeeIds.every((id: number) => selectedEmployeeIds.includes(id));
@@ -117,21 +118,21 @@ export default function AdvanceSalaries() {
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = '#111827';
-    ctx.font = '42px Arial, sans-serif';
-    ctx.fillText(`Name: ${employee.name || '-'}`, centerX, 80);
+    ctx.font = '700 56px Arial, sans-serif';
+    ctx.fillText(`Name: ${employee.name || '-'}`, centerX, 70, 920);
 
-    ctx.font = '38px Arial, sans-serif';
-    ctx.fillText(`Dept: ${employee.department_name || '-'}`, centerX, 125);
+    ctx.font = '700 50px Arial, sans-serif';
+    ctx.fillText(`Dept: ${employee.department_name || '-'}`, centerX, 125, 920);
 
-    ctx.font = '700 52px Arial, sans-serif';
+    ctx.font = '700 62px Arial, sans-serif';
     ctx.fillText('Advance taken', centerX, 190);
 
     ctx.fillStyle = '#dc2626';
-    ctx.font = '700 60px Arial, sans-serif';
+    ctx.font = '700 76px Arial, sans-serif';
     ctx.fillText(`Rs ${formatReceiptMoney(advance.amount)}`, centerX, 260);
 
     ctx.fillStyle = '#111827';
-    ctx.font = '700 30px Arial, sans-serif';
+    ctx.font = '700 40px Arial, sans-serif';
     ctx.fillText(formatReceiptDate(advance.request_date), centerX, 315);
 
     ctx.strokeStyle = '#111827';
@@ -141,11 +142,11 @@ export default function AdvanceSalaries() {
     ctx.lineTo(810, 365);
     ctx.stroke();
 
-    ctx.font = '700 31px Arial, sans-serif';
-    ctx.fillText('Total Advance taken this month:', centerX, 415);
+    ctx.font = '700 44px Arial, sans-serif';
+    ctx.fillText('Total Advance taken this month:', centerX, 415, 920);
 
     ctx.fillStyle = '#dc2626';
-    ctx.font = '700 40px Arial, sans-serif';
+    ctx.font = '700 58px Arial, sans-serif';
     ctx.fillText(`Rs ${formatReceiptMoney(employee.advance_total)}`, centerX, 460);
 
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1));
@@ -545,6 +546,19 @@ export default function AdvanceSalaries() {
     });
   };
 
+  const exportSalarySheet = (format: 'xlsx' | 'pdf') => {
+    const params = new URLSearchParams({
+      month: selectedMonth || currentMonth(),
+      format,
+    });
+
+    if (searchTerm) {
+      params.set('search', searchTerm);
+    }
+
+    window.location.href = `${route('hr.advance-salaries.export')}?${params.toString()}`;
+  };
+
   const submitAdvance = (formData: any) => {
     if (mode === 'create') {
       const employeeId = Number(formData.employee_id);
@@ -687,6 +701,8 @@ export default function AdvanceSalaries() {
       breadcrumbs={[{ title: t('Dashboard'), href: route('dashboard') }, { title: t('Salary Advance') }]}
       actions={[
         { label: t('Import File'), icon: <Upload className="mr-2 h-4 w-4" />, onClick: () => importInputRef.current?.click() },
+        { label: t('Export Excel'), icon: <Download className="mr-2 h-4 w-4" />, onClick: () => exportSalarySheet('xlsx') },
+        { label: t('Export PDF'), icon: <Download className="mr-2 h-4 w-4" />, onClick: () => exportSalarySheet('pdf') },
         { label: t('Add New Advance'), icon: <Plus className="mr-2 h-4 w-4" />, onClick: () => openCreateForm() },
       ]}
       noPadding
@@ -706,7 +722,7 @@ export default function AdvanceSalaries() {
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={t('Search employee or ID...')}
+                placeholder={t('Search employee, ID, or department...')}
                 className="pl-9 lg:max-w-xl"
               />
             </div>
@@ -884,17 +900,17 @@ export default function AdvanceSalaries() {
                             <>
                               <Button type="button" size="sm" variant="outline" onClick={() => shareAdvanceOnWhatsApp(employee, latestAdvance)}>
                                 <Share2 className="h-4 w-4" />
-                                {t('Share on WhatsApp')}
+                                {t('WhatsApp')}
                               </Button>
                               <Button type="button" size="sm" variant="outline" onClick={() => downloadAdvanceReceiptImage(employee, latestAdvance)}>
                                 <Download className="h-4 w-4" />
-                                {t('Download Image')}
+                                {t('Download')}
                               </Button>
                             </>
                           )}
                           <Button type="button" size="sm" variant="outline" onClick={() => openCreateForm(employee)}>
                             <Plus className="h-4 w-4" />
-                            {t('Add Advance')}
+                            {t('Add New')}
                           </Button>
                           {Number(employee.advance_total || 0) > 0 && (
                             <Button type="button" size="sm" variant="outline" onClick={() => openForwardModal(employee)}>
@@ -946,7 +962,7 @@ export default function AdvanceSalaries() {
                                               variant="ghost"
                                               size="icon"
                                               className="h-8 w-8 text-green-600"
-                                              title={t('Share on WhatsApp')}
+                                              title={t('WhatsApp')}
                                               onClick={() => shareAdvanceOnWhatsApp(employee, advance)}
                                             >
                                               <Share2 className="h-4 w-4" />
@@ -956,7 +972,7 @@ export default function AdvanceSalaries() {
                                               variant="ghost"
                                               size="icon"
                                               className="h-8 w-8 text-blue-600"
-                                              title={t('Download Image')}
+                                              title={t('Download')}
                                               onClick={() => downloadAdvanceReceiptImage(employee, advance)}
                                             >
                                               <Download className="h-4 w-4" />
@@ -1047,7 +1063,7 @@ export default function AdvanceSalaries() {
                 <div className="mt-4 grid gap-2">
                   <Button type="button" size="sm" variant="outline" className="w-full justify-center" onClick={() => openCreateForm(employee)}>
                     <Plus className="h-4 w-4" />
-                    {t('Add Advance')}
+                    {t('Add New')}
                   </Button>
                   {Number(employee.advance_total || 0) > 0 && (
                     <Button type="button" size="sm" variant="outline" className="w-full justify-center" onClick={() => openForwardModal(employee)}>
@@ -1065,7 +1081,7 @@ export default function AdvanceSalaries() {
                     <div className="grid grid-cols-2 gap-2">
                       <Button type="button" size="sm" variant="outline" className="justify-center" onClick={() => shareAdvanceOnWhatsApp(employee, latestAdvance)}>
                         <Share2 className="h-4 w-4" />
-                        {t('Share')}
+                        {t('WhatsApp')}
                       </Button>
                       <Button type="button" size="sm" variant="outline" className="justify-center" onClick={() => downloadAdvanceReceiptImage(employee, latestAdvance)}>
                         <Download className="h-4 w-4" />
@@ -1129,10 +1145,10 @@ export default function AdvanceSalaries() {
                   </div>
                   {!advance.is_virtual_repayment && (
                     <div className="mt-3 grid grid-cols-4 gap-1">
-                      <Button type="button" variant="outline" size="icon" className="h-9 w-full text-green-600" title={t('Share on WhatsApp')} onClick={() => shareAdvanceOnWhatsApp(mobileEntriesEmployee, advance)}>
+                      <Button type="button" variant="outline" size="icon" className="h-9 w-full text-green-600" title={t('WhatsApp')} onClick={() => shareAdvanceOnWhatsApp(mobileEntriesEmployee, advance)}>
                         <Share2 className="h-4 w-4" />
                       </Button>
-                      <Button type="button" variant="outline" size="icon" className="h-9 w-full text-blue-600" title={t('Download Image')} onClick={() => downloadAdvanceReceiptImage(mobileEntriesEmployee, advance)}>
+                      <Button type="button" variant="outline" size="icon" className="h-9 w-full text-blue-600" title={t('Download')} onClick={() => downloadAdvanceReceiptImage(mobileEntriesEmployee, advance)}>
                         <Download className="h-4 w-4" />
                       </Button>
                       <Button
@@ -1206,7 +1222,7 @@ export default function AdvanceSalaries() {
                   onClick={() => downloadAdvanceReceiptImage(recentAdvanceContext.employee, recentAdvanceContext.advance)}
                 >
                   <Download className="h-4 w-4" />
-                  {t('Download Image')}
+                  {t('Download')}
                 </Button>
                 <Button
                   type="button"
@@ -1214,7 +1230,7 @@ export default function AdvanceSalaries() {
                   onClick={() => shareAdvanceOnWhatsApp(recentAdvanceContext.employee, recentAdvanceContext.advance)}
                 >
                   <Share2 className="h-4 w-4" />
-                  {t('Share on WhatsApp')}
+                  {t('WhatsApp')}
                 </Button>
               </div>
             </div>

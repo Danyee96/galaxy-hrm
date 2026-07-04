@@ -46,7 +46,7 @@ class GoalTypeController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $goalTypes = $query->paginate($request->per_page ?? 10);
+            $goalTypes = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/performance/goal-types/index', [
                 'goalTypes' => $goalTypes,

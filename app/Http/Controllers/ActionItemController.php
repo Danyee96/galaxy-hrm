@@ -60,7 +60,7 @@ class ActionItemController extends Controller
                 ->update(['status' => 'Overdue']);
 
             $query->orderBy('id', 'desc');
-            $actionItems = $query->paginate($request->per_page ?? 10);
+            $actionItems = $query->paginate($request->per_page ?? 50);
 
             $meetings = Meeting::whereIn('created_by', getCompanyAndUsersId())
                 ->select('id', 'title', 'meeting_date')

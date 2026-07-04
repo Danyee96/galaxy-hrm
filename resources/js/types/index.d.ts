@@ -9,7 +9,7 @@ export interface NavItem {
 }
 
 export interface TableColumn {
-  label: string;
+  label: React.ReactNode;
   key: string;
   isImage?: boolean;
   isAction?: boolean;
@@ -17,6 +17,7 @@ export interface TableColumn {
   type?: string;
   sortable?: boolean;
   sortKey?: string;
+  sortField?: string;
 }
 
 export interface ActionConfig {

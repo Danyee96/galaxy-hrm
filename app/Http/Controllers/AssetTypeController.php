@@ -41,7 +41,7 @@ class AssetTypeController extends Controller
                 $query->orderBy('name', 'asc');
             }
 
-            $assetTypes = $query->paginate($request->per_page ?? 10);
+            $assetTypes = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/assets/types/index', [
                 'assetTypes' => $assetTypes,

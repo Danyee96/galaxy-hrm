@@ -65,7 +65,7 @@ class TrainingSessionController extends Controller
         // Add attendance count and trainers count
         $query->withCount(['attendance', 'trainers']);
 
-        $trainingSessions = $query->paginate($request->per_page ?? 10);
+        $trainingSessions = $query->paginate($request->per_page ?? 50);
 
         // Get training programs for filter dropdown
         $trainingPrograms = TrainingProgram::whereIn('created_by', getCompanyAndUsersId())
@@ -74,7 +74,7 @@ class TrainingSessionController extends Controller
             ->get();
 
         // Get employees for trainer dropdown
-        $employees = User::with('employee')
+        $employees = User::with('employee.department')
             ->where('type', 'employee')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')

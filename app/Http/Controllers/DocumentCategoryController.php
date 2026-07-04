@@ -39,7 +39,7 @@ class DocumentCategoryController extends Controller
             }
 
             $query->orderBy('sort_order', 'asc')->orderBy('id', 'desc');
-            $documentCategories = $query->paginate($request->per_page ?? 10);
+            $documentCategories = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/documents/document-categories/index', [
                 'documentCategories' => $documentCategories,

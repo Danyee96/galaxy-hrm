@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function EmployeeEdit() {
   const { t } = useTranslation();
-  const { employee, departments } = usePage().props as any;
+  const { employee, departments, flash = {} } = usePage().props as any;
   const formatNumberInput = (value: any) => {
     if (value === null || value === undefined || value === '') return '';
     const amount = Number(value);
@@ -59,12 +59,18 @@ export default function EmployeeEdit() {
         setIsSubmitting(false);
         if (page.props.flash.success) {
           toast.success(t(page.props.flash.success));
+        } else if (page.props.flash.error) {
+          toast.error(t(page.props.flash.error));
         }
       },
       onError: (errors) => {
         setIsSubmitting(false);
         setErrors(errors);
-        toast.error(t('Please correct the errors in the form'));
+        const firstError = Object.values(errors)[0];
+        toast.error(typeof firstError === 'string' ? t(firstError) : t('Please correct the errors in the form'));
+      },
+      onFinish: () => {
+        setIsSubmitting(false);
       },
     });
   };
@@ -95,6 +101,12 @@ export default function EmployeeEdit() {
             <CardTitle>{t('Employee Details')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
+            {flash.error && (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {t(flash.error)}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="employee_id" required>{t('Employee ID')}</Label>
               <Input

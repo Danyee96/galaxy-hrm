@@ -60,12 +60,19 @@ class PayslipController extends Controller
                 $query->orderBy('pay_date', 'desc');
             }
 
-            $payslips = $query->paginate($request->per_page ?? 10);
+            $payslips = $query->paginate($request->per_page ?? 50);
 
             // Get employees for filter dropdown
             $employees = User::where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
-                ->get(['id', 'name']);
+                ->with('employee.department')
+                ->get(['id', 'name'])
+                ->map(fn (User $employee) => [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'employee_id' => $employee->employee?->employee_id,
+                    'department_name' => $employee->employee?->department?->name,
+                ]);
 
             return Inertia::render('hr/payslips/index', [
                 'payslips' => $payslips,

@@ -40,7 +40,7 @@ class MeetingRoomController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $meetingRooms = $query->paginate($request->per_page ?? 10);
+            $meetingRooms = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('meetings/meeting-rooms/index', [
                 'meetingRooms' => $meetingRooms,

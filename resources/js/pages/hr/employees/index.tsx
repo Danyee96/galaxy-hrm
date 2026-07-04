@@ -2,12 +2,14 @@ import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { CrudTable } from '@/components/CrudTable';
 import { PageTemplate } from '@/components/page-template';
 import { toast } from '@/components/custom-toast';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { hasPermission } from '@/utils/authorization';
 import { router, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { Plus, Trash2, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function Employees() {
@@ -19,7 +21,14 @@ export default function Employees() {
   const [selectedDepartment, setSelectedDepartment] = useState(pageFilters.department || 'all');
   const [showFilters, setShowFilters] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<'single' | 'bulk'>('single');
   const [currentItem, setCurrentItem] = useState<any>(null);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const visibleEmployeeIds = (employees?.data || []).map((employee: any) => Number(employee.id));
+  const allVisibleSelected = visibleEmployeeIds.length > 0 && visibleEmployeeIds.every((id: number) => selectedEmployeeIds.includes(id));
+  const canDeleteEmployees = hasPermission(permissions, 'delete-employees');
 
   const hasActiveFilters = () => selectedDepartment !== 'all' || searchTerm !== '';
   const activeFilterCount = () => (selectedDepartment !== 'all' ? 1 : 0) + (searchTerm ? 1 : 0);
@@ -77,11 +86,37 @@ export default function Employees() {
     }
 
     if (action === 'delete') {
+      setDeleteMode('single');
       setIsDeleteModalOpen(true);
     }
   };
 
   const handleDeleteConfirm = () => {
+    if (deleteMode === 'bulk') {
+      toast.loading(t('Deleting employees...'));
+
+      router.delete(route('hr.employees.bulk-destroy'), {
+        data: { employee_ids: selectedEmployeeIds },
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setIsDeleteModalOpen(false);
+          setSelectedEmployeeIds([]);
+          toast.dismiss();
+          if (page.props.flash.success) {
+            toast.success(t(page.props.flash.success));
+          } else if (page.props.flash.error) {
+            toast.error(t(page.props.flash.error));
+          }
+        },
+        onError: (errors) => {
+          toast.dismiss();
+          const firstError = Object.values(errors)[0];
+          toast.error(typeof firstError === 'string' ? t(firstError) : t('Failed to delete employees'));
+        },
+      });
+      return;
+    }
+
     toast.loading(t('Deleting employee...'));
 
     router.delete(route('hr.employees.destroy', currentItem.id), {
@@ -101,9 +136,77 @@ export default function Employees() {
     });
   };
 
+  const toggleEmployeeSelection = (employeeId: number, checked: boolean) => {
+    setSelectedEmployeeIds((current) => (
+      checked
+        ? [...new Set([...current, employeeId])]
+        : current.filter((id) => id !== employeeId)
+    ));
+  };
+
+  const toggleVisibleSelection = (checked: boolean) => {
+    setSelectedEmployeeIds((current) => {
+      if (!checked) {
+        return current.filter((id) => !visibleEmployeeIds.includes(id));
+      }
+
+      return [...new Set([...current, ...visibleEmployeeIds])];
+    });
+  };
+
+  const openBulkDeleteModal = () => {
+    if (selectedEmployeeIds.length === 0) {
+      toast.error(t('Please select at least one employee.'));
+      return;
+    }
+
+    setDeleteMode('bulk');
+    setCurrentItem({ name: `${selectedEmployeeIds.length} ${t('employees')}` });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    toast.loading(t('Importing employees...'));
+
+    router.post(route('hr.employees.import'), formData, {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: (page) => {
+        toast.dismiss();
+        if (page.props.flash.success) {
+          toast.success(t(page.props.flash.success));
+        } else if (page.props.flash.error) {
+          toast.error(t(page.props.flash.error));
+        }
+      },
+      onError: (errors) => {
+        toast.dismiss();
+        const firstError = Object.values(errors)[0];
+        toast.error(typeof firstError === 'string' ? t(firstError) : t('Failed to import employees'));
+      },
+      onFinish: () => {
+        if (importInputRef.current) {
+          importInputRef.current.value = '';
+        }
+      },
+    });
+  };
+
   const pageActions = [];
   if (hasPermission(permissions, 'create-employees')) {
     const canCreate = !planLimits || planLimits.can_create;
+    pageActions.push({
+      label: t('Import Employee'),
+      icon: <Upload className="h-4 w-4 mr-2" />,
+      variant: 'outline',
+      onClick: () => importInputRef.current?.click(),
+    });
     pageActions.push({
       label: canCreate ? t('Add Employee') : t('Employee Limit Reached'),
       icon: <Plus className="h-4 w-4 mr-2" />,
@@ -112,6 +215,15 @@ export default function Employees() {
         ? () => router.get(route('hr.employees.create'))
         : () => toast.error(t('Employee limit exceeded. Please upgrade your plan.')),
       disabled: !canCreate,
+    });
+  }
+
+  if (canDeleteEmployees && selectedEmployeeIds.length > 0) {
+    pageActions.unshift({
+      label: t('Delete Selected (:count)', { count: selectedEmployeeIds.length }),
+      icon: <Trash2 className="h-4 w-4 mr-2" />,
+      variant: 'destructive',
+      onClick: openBulkDeleteModal,
     });
   }
 
@@ -149,6 +261,26 @@ export default function Employees() {
   };
 
   const columns = [
+    ...(canDeleteEmployees ? [
+      {
+        key: '__select',
+        label: (
+          <Checkbox
+            checked={allVisibleSelected}
+            onCheckedChange={(checked) => toggleVisibleSelection(Boolean(checked))}
+            aria-label={t('Select all employees on this page')}
+          />
+        ),
+        className: 'w-12',
+        render: (_value: any, row: any) => (
+          <Checkbox
+            checked={selectedEmployeeIds.includes(Number(row.id))}
+            onCheckedChange={(checked) => toggleEmployeeSelection(Number(row.id), Boolean(checked))}
+            aria-label={t('Select employee')}
+          />
+        ),
+      },
+    ] : []),
     {
       key: 'employee_id',
       label: t('Employee ID'),
@@ -213,6 +345,14 @@ export default function Employees() {
       breadcrumbs={breadcrumbs}
       noPadding
     >
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".xlsx,.xlsm,.xltx,.xltm,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain"
+        className="hidden"
+        onChange={handleImportFile}
+      />
+
       <div className="mb-4 rounded-lg bg-white p-4 shadow">
         <SearchAndFilterBar
           searchTerm={searchTerm}
@@ -235,7 +375,7 @@ export default function Employees() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || '10'}
+          currentPerPage={pageFilters.per_page?.toString() || '50'}
           onPerPageChange={(value) => {
             router.get(
               route('hr.employees.index'),
@@ -247,6 +387,24 @@ export default function Employees() {
       </div>
 
       <div className="overflow-hidden rounded-lg bg-white shadow">
+        {selectedEmployeeIds.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            <span className="font-medium">
+              {selectedEmployeeIds.length} {t('employees selected')}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setSelectedEmployeeIds([])}>
+                {t('Clear Selection')}
+              </Button>
+              {canDeleteEmployees && (
+                <Button type="button" variant="destructive" size="sm" onClick={openBulkDeleteModal}>
+                  <Trash2 className="h-4 w-4" />
+                  {t('Delete Selected')}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
         <CrudTable
           columns={columns}
           actions={actions}
@@ -281,7 +439,7 @@ export default function Employees() {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
         itemName={currentItem?.name || ''}
-        entityName="employee"
+        entityName={deleteMode === 'bulk' ? 'employees' : 'employee'}
       />
     </PageTemplate>
   );

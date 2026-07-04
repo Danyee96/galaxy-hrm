@@ -10,6 +10,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 
@@ -355,7 +356,7 @@ export default function EmployeeSalaries() {
     { value: 'all', label: t('All Employees'), disabled : true },
     ...(employees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: emp.name
+      label: formatEmployeeOptionLabel(emp)
     }))
   ];
 
@@ -404,7 +405,7 @@ export default function EmployeeSalaries() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.employee-salaries.index'), {
               page: 1,
@@ -464,7 +465,7 @@ export default function EmployeeSalaries() {
               disabled: formMode === 'edit' || formMode === 'view',
               options: employees ? employees.map((emp: any) => ({
                 value: emp.id.toString(),
-                label: emp.name
+                label: formatEmployeeOptionLabel(emp)
               })) : []
             },
             { name: 'basic_salary', label: t('Basic Salary'), type: 'number', min: 0, step: 0.01, readOnly: true },

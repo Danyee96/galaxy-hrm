@@ -41,7 +41,7 @@ class JobRequisitionController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $jobRequisitions = $query->paginate($request->per_page ?? 10);
+            $jobRequisitions = $query->paginate($request->per_page ?? 50);
 
             $jobCategories = JobCategory::whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')

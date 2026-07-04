@@ -190,7 +190,7 @@ export default function PlanRequestsPage() {
             router.get(route('plan-requests.index'), { page: 1 }, { preserveState: true, preserveScroll: true });
           }}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             const params: any = { page: 1, per_page: parseInt(value) };
             

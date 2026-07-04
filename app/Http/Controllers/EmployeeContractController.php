@@ -63,7 +63,7 @@ class EmployeeContractController extends Controller
             $query->orderBy('id', 'desc');
 
             $query->orderBy('id', 'desc');
-            $employeeContracts = $query->paginate($request->per_page ?? 10);
+            $employeeContracts = $query->paginate($request->per_page ?? 50);
 
             $contractTypes = ContractType::whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')

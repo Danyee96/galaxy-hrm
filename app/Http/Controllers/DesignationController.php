@@ -44,7 +44,7 @@ class DesignationController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $designations = $query->paginate($request->per_page ?? 10);
+            $designations = $query->paginate($request->per_page ?? 50);
 
             // Get departments for dropdown
             $departments = Department::with('branch')

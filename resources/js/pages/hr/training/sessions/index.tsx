@@ -9,6 +9,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus, Calendar } from 'lucide-react';
@@ -429,7 +430,7 @@ export default function TrainingSessions() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.training-sessions.index'), { 
               page: 1, 
@@ -553,7 +554,7 @@ export default function TrainingSessions() {
               type: 'multi-select',
               options: (employees || []).map((employee: any) => ({
                 value: employee.id.toString(),
-                label: `${employee.name} (${employee.employee_id})`
+                label: formatEmployeeOptionLabel(employee)
               }))
             },
             { 

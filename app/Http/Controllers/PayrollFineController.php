@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PayrollFine;
+use App\Models\PayrollRun;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -47,9 +48,9 @@ class PayrollFineController extends Controller
         }
 
         $fineEmployees = $query
-            ->orderByRaw("CAST((select employee_id from employees where employees.user_id = users.id limit 1) AS UNSIGNED) asc")
+            ->orderByRaw($this->userEmployeeIdSortExpression().' asc')
             ->orderBy('name')
-            ->paginate($request->per_page ?? 10)
+            ->paginate($request->per_page ?? 50)
             ->withQueryString()
             ->through(function (User $employee) {
                 $fineTotal = $employee->payrollFines->sum(fn ($fine) => (float) $fine->amount);
@@ -74,9 +75,16 @@ class PayrollFineController extends Controller
         $employees = User::emp()
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
-            ->orderByRaw("CAST((select employee_id from employees where employees.user_id = users.id limit 1) AS UNSIGNED) asc")
+            ->with('employee.department')
+            ->orderByRaw($this->userEmployeeIdSortExpression().' asc')
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name'])
+            ->map(fn (User $employee) => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'employee_id' => $employee->employee?->employee_id,
+                'department_name' => $employee->employee?->department?->name,
+            ]);
 
         return Inertia::render('hr/payroll-fines/index', [
             'fineEmployees' => $fineEmployees,
@@ -99,7 +107,10 @@ class PayrollFineController extends Controller
         $validated['created_by'] = creatorId();
         $validated['fine_date'] = $validated['fine_date'] ?? now()->toDateString();
 
-        PayrollFine::create($validated);
+        $fine = PayrollFine::create($validated);
+        $this->syncPayrollEntriesForFineChanges([
+            ['employee_id' => (int) $fine->employee_id, 'fine_date' => $fine->fine_date?->toDateString()],
+        ]);
 
         return redirect()->back()->with('success', __('Fine added successfully.'));
     }
@@ -117,8 +128,15 @@ class PayrollFineController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $oldEmployeeId = (int) $payrollFine->employee_id;
+        $oldFineDate = $payrollFine->fine_date?->toDateString();
+
         $validated['fine_date'] = $validated['fine_date'] ?? $payrollFine->fine_date?->toDateString() ?? now()->toDateString();
         $payrollFine->update($validated);
+        $this->syncPayrollEntriesForFineChanges([
+            ['employee_id' => $oldEmployeeId, 'fine_date' => $oldFineDate],
+            ['employee_id' => (int) $payrollFine->employee_id, 'fine_date' => $payrollFine->fine_date?->toDateString()],
+        ]);
 
         return redirect()->back()->with('success', __('Fine updated successfully.'));
     }
@@ -129,8 +147,34 @@ class PayrollFineController extends Controller
             return redirect()->back()->with('error', __('Permission Denied.'));
         }
 
+        $employeeId = (int) $payrollFine->employee_id;
+        $fineDate = $payrollFine->fine_date?->toDateString();
+
         $payrollFine->delete();
+        $this->syncPayrollEntriesForFineChanges([
+            ['employee_id' => $employeeId, 'fine_date' => $fineDate],
+        ]);
 
         return redirect()->back()->with('success', __('Fine deleted successfully.'));
+    }
+
+    private function syncPayrollEntriesForFineChanges(array $changes): void
+    {
+        collect($changes)
+            ->filter(fn ($change) => ! empty($change['employee_id']) && ! empty($change['fine_date']))
+            ->unique(fn ($change) => $change['employee_id'].'|'.$change['fine_date'])
+            ->each(function ($change) {
+                PayrollRun::whereIn('created_by', getCompanyAndUsersId())
+                    ->where('status', '!=', 'cancelled')
+                    ->whereDate('pay_period_start', '<=', $change['fine_date'])
+                    ->whereDate('pay_period_end', '>=', $change['fine_date'])
+                    ->whereHas('payrollEntries', function ($query) use ($change) {
+                        $query->where('employee_id', $change['employee_id']);
+                    })
+                    ->get()
+                    ->each(function (PayrollRun $run) use ($change) {
+                        $run->syncFineDeductionsToEntries([(int) $change['employee_id']]);
+                    });
+            });
     }
 }

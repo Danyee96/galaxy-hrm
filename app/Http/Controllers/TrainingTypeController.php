@@ -60,7 +60,7 @@ class TrainingTypeController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $trainingTypes = $query->paginate($request->per_page ?? 10);
+            $trainingTypes = $query->paginate($request->per_page ?? 50);
 
             // Get branches for filter dropdown
             $branches = Branch::whereIn('created_by', getCompanyAndUsersId())

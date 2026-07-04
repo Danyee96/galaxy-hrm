@@ -10,6 +10,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 
 export default function Departments() {
   const { t } = useTranslation();
@@ -187,9 +188,7 @@ export default function Departments() {
 
   const employeeOptions = (employees || []).map((employee: any) => ({
     value: employee.id.toString(),
-    label: employee.employee?.department?.name
-      ? `${employee.name} (${employee.employee.department.name})`
-      : employee.name,
+    label: formatEmployeeOptionLabel(employee),
   }));
 
   const formInitialData = currentItem
@@ -224,7 +223,7 @@ export default function Departments() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || '10'}
+          currentPerPage={pageFilters.per_page?.toString() || '50'}
           onPerPageChange={(value) => {
             router.get(
               route('hr.departments.index'),

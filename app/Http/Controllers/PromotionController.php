@@ -73,7 +73,7 @@ class PromotionController extends Controller
                 $query->orderBy('promotion_date', 'desc');
             }
 
-            $promotions = $query->paginate($request->per_page ?? 10);
+            $promotions = $query->paginate($request->per_page ?? 50);
 
             // Get designations for filter dropdown
             $designations = Designation::with(['department.branch'])
@@ -109,7 +109,7 @@ class PromotionController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

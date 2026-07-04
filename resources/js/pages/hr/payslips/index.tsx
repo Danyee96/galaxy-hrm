@@ -7,6 +7,7 @@ import { hasPermission } from '@/utils/authorization';
 import { CrudTable } from '@/components/CrudTable';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 
@@ -190,7 +191,7 @@ export default function Payslips() {
     { value: 'all', label: t('All Employees') },
     ...(employees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: emp.name
+      label: formatEmployeeOptionLabel(emp)
     }))
   ];
 
@@ -253,7 +254,7 @@ export default function Payslips() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.payslips.index'), {
               page: 1,

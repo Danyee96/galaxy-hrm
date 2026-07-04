@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\Department;
-use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -42,7 +41,7 @@ class DepartmentController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $departments = $query->paginate($request->per_page ?? 10);
+            $departments = $query->paginate($request->per_page ?? 50);
 
             $employees = User::with('employee.department')
                 ->where('type', 'employee')
@@ -212,25 +211,11 @@ class DepartmentController extends Controller
 
     private function assignEmployees(Department $department, array $employeeIds): void
     {
-        if (empty($employeeIds)) {
-            return;
-        }
-
-        Employee::whereIn('user_id', $employeeIds)
-            ->whereIn('created_by', getCompanyAndUsersId())
-            ->update([
-                'department_id' => $department->id,
-                'branch_id' => $department->branch_id,
-            ]);
+        // Employee department/branch belongs to the Employee edit screen only.
     }
 
     private function syncEmployees(Department $department, array $employeeIds): void
     {
-        Employee::where('department_id', $department->id)
-            ->whereIn('created_by', getCompanyAndUsersId())
-            ->whereNotIn('user_id', $employeeIds)
-            ->update(['department_id' => null]);
-
-        $this->assignEmployees($department, $employeeIds);
+        // Employee department/branch belongs to the Employee edit screen only.
     }
 }

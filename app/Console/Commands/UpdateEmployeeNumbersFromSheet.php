@@ -19,6 +19,10 @@ class UpdateEmployeeNumbersFromSheet extends Command
 
     public function handle(): int
     {
+        $this->error('Employee number updates from sheets are disabled. Update employee data only from the Employees tab edit option.');
+
+        return self::FAILURE;
+
         $path = (string) $this->argument('file');
         if (! is_file($path)) {
             $this->error("File not found: {$path}");

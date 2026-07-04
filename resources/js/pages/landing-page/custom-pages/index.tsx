@@ -292,7 +292,7 @@ export default function CustomPagesIndex() {
           hasActiveFilters={() => false}
           activeFilterCount={() => 0}
           onResetFilters={() => { }}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             const params: any = { page: 1, per_page: parseInt(value) };
             if (searchTerm) {

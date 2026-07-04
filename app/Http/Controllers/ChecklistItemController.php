@@ -44,7 +44,7 @@ class ChecklistItemController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $checklistItems = $query->paginate($request->per_page ?? 10);
+            $checklistItems = $query->paginate($request->per_page ?? 50);
 
             $checklists = OnboardingChecklist::whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')

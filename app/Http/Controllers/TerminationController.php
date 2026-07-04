@@ -70,10 +70,10 @@ class TerminationController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $terminations = $query->paginate($request->per_page ?? 10);
+            $terminations = $query->paginate($request->per_page ?? 50);
 
             // Get employees for filter dropdown
-            $employees = User::with('employee')
+            $employees = User::with('employee.department')
                 ->where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
@@ -117,7 +117,7 @@ class TerminationController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

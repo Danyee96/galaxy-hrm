@@ -270,6 +270,14 @@ Route::middleware(['auth', 'verified', 'setting'])->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('dashboard/redirect', [DashboardController::class, 'redirectToFirstAvailablePage'])->name('dashboard.redirect');
 
+        Route::get('system-backups', [\App\Http\Controllers\SystemBackupController::class, 'index'])->name('system-backups.index');
+        Route::post('system-backups', [\App\Http\Controllers\SystemBackupController::class, 'store'])->name('system-backups.store');
+        Route::post('system-backups/upload', [\App\Http\Controllers\SystemBackupController::class, 'upload'])->name('system-backups.upload');
+        Route::put('system-backups/{backup}', [\App\Http\Controllers\SystemBackupController::class, 'rename'])->name('system-backups.rename');
+        Route::post('system-backups/{backup}/restore', [\App\Http\Controllers\SystemBackupController::class, 'restore'])->name('system-backups.restore');
+        Route::get('system-backups/{backup}/download', [\App\Http\Controllers\SystemBackupController::class, 'download'])->name('system-backups.download');
+        Route::delete('system-backups/{backup}', [\App\Http\Controllers\SystemBackupController::class, 'destroy'])->name('system-backups.destroy');
+
         Route::get('media-library', function () {
             return Inertia::render('media-library');
         })->name('media-library');
@@ -362,6 +370,8 @@ Route::middleware(['auth', 'verified', 'setting'])->group(function () {
             Route::get('hr/employees', [EmployeeController::class, 'index'])->name('hr.employees.index');
             Route::get('hr/employees/create', [EmployeeController::class, 'create'])->middleware('permission:create-employees')->name('hr.employees.create');
             Route::post('hr/employees', [EmployeeController::class, 'store'])->middleware('permission:create-employees')->name('hr.employees.store');
+            Route::post('hr/employees/import', [EmployeeController::class, 'import'])->middleware('permission:create-employees')->name('hr.employees.import');
+            Route::delete('hr/employees/bulk-destroy', [EmployeeController::class, 'bulkDestroy'])->middleware('permission:delete-employees')->name('hr.employees.bulk-destroy');
             Route::get('hr/employees/{employee}', [EmployeeController::class, 'show'])->middleware('permission:view-employees')->name('hr.employees.show');
             Route::get('hr/employees/{employee}/edit', [EmployeeController::class, 'edit'])->middleware('permission:edit-employees')->name('hr.employees.edit');
             Route::put('hr/employees/{employee}', [EmployeeController::class, 'update'])->middleware('permission:edit-employees')->name('hr.employees.update');
@@ -1074,6 +1084,7 @@ Route::middleware(['auth', 'verified', 'setting'])->group(function () {
         Route::middleware('permission:manage-payroll-runs')->group(function () {
             Route::get('hr/payroll-runs', [\App\Http\Controllers\PayrollRunController::class, 'index'])->name('hr.payroll-runs.index');
             Route::get('hr/payroll-runs/{payrollRun}', [\App\Http\Controllers\PayrollRunController::class, 'show'])->middleware('permission:view-payroll-runs')->name('hr.payroll-runs.show');
+            Route::get('hr/payroll-runs/{payrollRun}/download-pdf', [\App\Http\Controllers\PayrollRunController::class, 'downloadPdf'])->middleware('permission:view-payroll-runs')->name('hr.payroll-runs.download-pdf');
             Route::post('hr/payroll-runs', [\App\Http\Controllers\PayrollRunController::class, 'store'])->middleware('permission:create-payroll-runs')->name('hr.payroll-runs.store');
             Route::put('hr/payroll-runs/{payrollRun}', [\App\Http\Controllers\PayrollRunController::class, 'update'])->middleware('permission:edit-payroll-runs')->name('hr.payroll-runs.update');
             Route::delete('hr/payroll-runs/{payrollRun}', [\App\Http\Controllers\PayrollRunController::class, 'destroy'])->middleware('permission:delete-payroll-runs')->name('hr.payroll-runs.destroy');
@@ -1088,6 +1099,7 @@ Route::middleware(['auth', 'verified', 'setting'])->group(function () {
         });
 
         Route::get('hr/advance-salaries', [\App\Http\Controllers\AdvanceSalaryController::class, 'index'])->name('hr.advance-salaries.index');
+        Route::get('hr/advance-salaries/export', [\App\Http\Controllers\AdvanceSalaryController::class, 'export'])->name('hr.advance-salaries.export');
         Route::post('hr/advance-salaries', [\App\Http\Controllers\AdvanceSalaryController::class, 'store'])->name('hr.advance-salaries.store');
         Route::post('hr/advance-salaries/import', [\App\Http\Controllers\AdvanceSalaryController::class, 'import'])->name('hr.advance-salaries.import');
         Route::delete('hr/advance-salaries/bulk-delete', [\App\Http\Controllers\AdvanceSalaryController::class, 'bulkDestroy'])->name('hr.advance-salaries.bulk-destroy');

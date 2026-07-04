@@ -14,7 +14,7 @@ class RoleController extends BaseController
     public function index()
     {
         if (Auth::user()->can('manage-roles')) {
-            // $roles = Role::withPermissionCheck()->with(['permissions', 'creator'])->latest()->paginate(10);
+            // $roles = Role::withPermissionCheck()->with(['permissions', 'creator'])->latest()->paginate(50);
             $roles = Role::with(['permissions', 'creator'])->where(function ($q) {
                 if (Auth::user()->can('manage-any-roles')) {
                     $q->whereIn('created_by', getCompanyAndUsersId());
@@ -23,7 +23,7 @@ class RoleController extends BaseController
                 } else {
                     $q->whereRaw('1 = 0');
                 }
-            })->latest()->paginate(10);
+            })->latest()->paginate(50);
 
             // Add is_editable attribute to each role
             $roles->getCollection()->transform(function ($role) {

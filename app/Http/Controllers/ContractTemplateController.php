@@ -45,7 +45,7 @@ class ContractTemplateController extends Controller
             }
 
             $query->orderBy('is_default', 'desc')->orderBy('id', 'desc');
-            $contractTemplates = $query->paginate($request->per_page ?? 10);
+            $contractTemplates = $query->paginate($request->per_page ?? 50);
 
             $contractTypes = ContractType::whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')

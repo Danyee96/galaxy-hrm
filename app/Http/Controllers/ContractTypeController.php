@@ -39,7 +39,7 @@ class ContractTypeController extends Controller
             }
 
             $query->orderBy('created_at', 'desc');
-            $contractTypes = $query->paginate($request->per_page ?? 10);
+            $contractTypes = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/contracts/contract-types/index', [
                 'contractTypes' => $contractTypes,

@@ -35,7 +35,7 @@ class MeetingTypeController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $meetingTypes = $query->paginate($request->per_page ?? 10);
+            $meetingTypes = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('meetings/meeting-types/index', [
                 'meetingTypes' => $meetingTypes,

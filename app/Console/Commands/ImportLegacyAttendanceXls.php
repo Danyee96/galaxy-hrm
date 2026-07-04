@@ -119,29 +119,9 @@ class ImportLegacyAttendanceXls extends Command
                         ->orWhere('biometric_emp_id', $employeeNo)
                         ->first();
 
-                    if ($employee && $employee->employee_id !== $employeeNo) {
-                        $conflict = Employee::where('employee_id', $employeeNo)
-                            ->where('id', '<>', $employee->id)
-                            ->exists();
-
-                        if (! $conflict) {
-                            $employee->update(['employee_id' => $employeeNo]);
-                        }
-                    }
-
                     if (! $employee) {
                         $employee = $this->createEmployee($employeeNo, $employeeName, $department->id, $branch->id, $creator->id);
                         $stats['employees_created']++;
-                    } else {
-                        if (! isset($seenEmployees[$employeeNo])) {
-                            $employee->update([
-                                'department_id' => $department->id,
-                                'branch_id' => $branch->id,
-                                'employee_status' => $employee->employee_status ?: 'active',
-                            ]);
-                            $employee->user?->update(['name' => $employeeName]);
-                            $stats['employees_updated']++;
-                        }
                     }
                     $seenEmployees[$employeeNo] = true;
 

@@ -73,7 +73,7 @@ class WarningController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $warnings = $query->paginate($request->per_page ?? 10);
+            $warnings = $query->paginate($request->per_page ?? 50);
 
             // Get managers for issuer dropdown
             $managers = User::whereIn('created_by', getCompanyAndUsersId())
@@ -116,7 +116,7 @@ class WarningController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

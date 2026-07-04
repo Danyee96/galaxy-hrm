@@ -46,7 +46,7 @@ class DocumentTypeController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $documentTypes = $query->paginate($request->per_page ?? 10);
+            $documentTypes = $query->paginate($request->per_page ?? 50);
 
             // Cast is_required to boolean for each document type
             $documentTypes->getCollection()->transform(function ($documentType) {

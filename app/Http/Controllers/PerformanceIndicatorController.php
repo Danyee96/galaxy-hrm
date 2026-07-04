@@ -54,7 +54,7 @@ class PerformanceIndicatorController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $indicators = $query->paginate($request->per_page ?? 10);
+            $indicators = $query->paginate($request->per_page ?? 50);
 
             // Get categories for filter dropdown
             $categories = PerformanceIndicatorCategory::whereIn('created_by', getCompanyAndUsersId())

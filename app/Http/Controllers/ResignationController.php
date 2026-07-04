@@ -64,7 +64,7 @@ class ResignationController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $resignations = $query->paginate($request->per_page ?? 10);
+            $resignations = $query->paginate($request->per_page ?? 50);
 
 
 
@@ -90,7 +90,7 @@ class ResignationController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

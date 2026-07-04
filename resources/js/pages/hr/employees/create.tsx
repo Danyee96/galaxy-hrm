@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function EmployeeCreate() {
   const { t } = useTranslation();
-  const { departments } = usePage().props as any;
+  const { departments, flash = {} } = usePage().props as any;
   const [formData, setFormData] = useState({ name: '', department_id: '', whatsapp_number: '', salary: '', bonus: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +53,8 @@ export default function EmployeeCreate() {
         setIsSubmitting(false);
         if (page.props.flash.success) {
           toast.success(t(page.props.flash.success));
+        } else if (page.props.flash.error) {
+          toast.error(t(page.props.flash.error));
         }
       },
       onError: (errors) => {
@@ -60,6 +62,7 @@ export default function EmployeeCreate() {
         setErrors(errors);
         toast.error(t('Please correct the errors in the form'));
       },
+      onFinish: () => setIsSubmitting(false),
     });
   };
 
@@ -89,6 +92,12 @@ export default function EmployeeCreate() {
             <CardTitle>{t('Employee Details')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
+            {flash.error && (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {t(flash.error)}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="name" required>{t('Name')}</Label>
               <Input

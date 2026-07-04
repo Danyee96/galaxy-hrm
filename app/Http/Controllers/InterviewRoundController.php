@@ -40,7 +40,7 @@ class InterviewRoundController extends Controller
             }
 
             $query->orderBy('job_id')->orderBy('sequence_number');
-            $interviewRounds = $query->paginate($request->per_page ?? 10);
+            $interviewRounds = $query->paginate($request->per_page ?? 50);
 
             $jobPostings = JobPosting::whereIn('created_by', getCompanyAndUsersId())
                 ->select('id', 'title', 'job_code')

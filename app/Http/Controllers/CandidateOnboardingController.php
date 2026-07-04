@@ -42,9 +42,9 @@ class CandidateOnboardingController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $candidateOnboarding = $query->paginate($request->per_page ?? 10);
+            $candidateOnboarding = $query->paginate($request->per_page ?? 50);
 
-            $employees = User::with('employee')
+            $employees = User::with('employee.department')
                 ->where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
@@ -81,7 +81,7 @@ class CandidateOnboardingController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

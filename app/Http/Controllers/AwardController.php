@@ -74,7 +74,7 @@ class AwardController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $awards = $query->paginate($request->per_page ?? 10);
+            $awards = $query->paginate($request->per_page ?? 50);
 
             // Get award types for filter dropdown
             $awardTypes = AwardType::whereIn('created_by', getCompanyAndUsersId())
@@ -83,7 +83,7 @@ class AwardController extends Controller
                 ->get();
 
             // // Get employees for filter dropdown
-            // $employees = User::with('employee')
+            // $employees = User::with('employee.department')
             //     ->where('type', 'employee')
             //     ->whereIn('created_by', getCompanyAndUsersId())
             //     ->where('status', 'active')
@@ -121,7 +121,7 @@ class AwardController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

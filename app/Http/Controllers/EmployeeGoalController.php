@@ -65,7 +65,7 @@ class EmployeeGoalController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $goals = $query->paginate($request->per_page ?? 10);
+            $goals = $query->paginate($request->per_page ?? 50);
 
 
             // Get goal types for filter dropdown
@@ -96,7 +96,7 @@ class EmployeeGoalController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))
@@ -106,7 +106,8 @@ class EmployeeGoalController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'employee_id' => $user->employee->employee_id ?? ''
+                    'employee_id' => $user->employee->employee_id ?? '',
+                    'department_name' => $user->employee?->department?->name ?? '',
                 ];
             });
         return $employees;

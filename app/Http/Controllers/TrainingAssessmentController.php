@@ -57,7 +57,7 @@ class TrainingAssessmentController extends Controller
         // Add employee results count
         $query->withCount(['employeeResults']);
 
-        $trainingAssessments = $query->paginate($request->per_page ?? 10);
+        $trainingAssessments = $query->paginate($request->per_page ?? 50);
 
         // Get training programs for filter dropdown
         $trainingPrograms = TrainingProgram::where('created_by', createdBy())

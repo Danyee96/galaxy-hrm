@@ -66,10 +66,10 @@ class TripController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $trips = $query->paginate($request->per_page ?? 10);
+            $trips = $query->paginate($request->per_page ?? 50);
 
             // Get employees for filter dropdown
-            $employees = User::with('employee')
+            $employees = User::with('employee.department')
                 ->where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
@@ -107,7 +107,7 @@ class TripController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

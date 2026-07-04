@@ -44,7 +44,7 @@ class InterviewController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $interviews = $query->paginate($request->per_page ?? 10);
+            $interviews = $query->paginate($request->per_page ?? 50);
 
             $candidates = Candidate::whereIn('created_by', getCompanyAndUsersId())
                 ->select('id', 'first_name', 'last_name')
@@ -56,7 +56,7 @@ class InterviewController extends Controller
                 ->select('id', 'name')
                 ->get();
 
-            $employees = UserModel::with('employee')
+            $employees = UserModel::with('employee.department')
                 ->whereIn('type', ['manager', 'hr', 'employee'])
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')

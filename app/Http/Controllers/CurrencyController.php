@@ -31,7 +31,7 @@ class CurrencyController extends Controller
         $query->orderBy($sortField, $sortDirection);
         
         // Pagination
-        $perPage = $request->input('per_page', 10);
+        $perPage = $request->input('per_page', 50);
         $currencies = $query->paginate($perPage)->withQueryString();
         
         return Inertia::render('currencies/index', [

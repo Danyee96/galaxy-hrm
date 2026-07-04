@@ -118,7 +118,12 @@ class Employee extends Model
     {
         $lastEmployee = self::orderBy('id', 'desc')->first();
         $nextId = $lastEmployee ? $lastEmployee->id + 1 : 1;
-        
-        return 'EMP' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
+
+        do {
+            $employeeId = 'EMP' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
+            $nextId++;
+        } while (self::where('employee_id', $employeeId)->exists());
+
+        return $employeeId;
     }
 }

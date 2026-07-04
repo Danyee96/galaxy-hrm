@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageTemplate } from '@/components/page-template';
 import { usePage, router } from '@inertiajs/react';
 import { Clock, Download, LogIn, LogOut, Pencil, Plus, Trash2, Upload } from 'lucide-react';
@@ -7,29 +7,35 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function AttendanceRecords() {
   const { t } = useTranslation();
-  const { auth, attendanceDays = [], attendanceAnalytics = {}, employees = [], selectedEmployee, filters: pageFilters = {} } = usePage().props as any;
+  const { auth, attendanceDays = [], attendanceAnalytics = {}, employees = [], selectedEmployee, filters: pageFilters = {}, flash = {} } = usePage().props as any;
   const permissions = auth?.permissions || [];
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(pageFilters.employee_id?.toString() || employees?.[0]?.id?.toString() || '');
-  const selectedEmployeeObject = employees.find((employee: any) => employee.id.toString() === selectedEmployeeId);
-  const selectedEmployeeName = selectedEmployeeObject?.name || selectedEmployee?.name || '';
-  const formatEmployeeNumber = (value: any) => {
-    const raw = value == null || value === '' ? '' : String(value);
-    if (!raw) return '-';
-    const match = raw.match(/\d+/);
-    return match ? String(Number(match[0])) : raw;
-  };
+  const sortedEmployees = useMemo(() => {
+    const employeeNumber = (employee: any) => {
+      const numericId = String(employee?.employee_id ?? '').replace(/\D/g, '');
+      return numericId ? Number(numericId) : Number.MAX_SAFE_INTEGER;
+    };
+
+    return [...employees].sort((a: any, b: any) => {
+      const idDiff = employeeNumber(a) - employeeNumber(b);
+      return idDiff !== 0 ? idDiff : String(a?.name ?? '').localeCompare(String(b?.name ?? ''));
+    });
+  }, [employees]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(pageFilters.employee_id?.toString() || sortedEmployees?.[0]?.id?.toString() || '');
+  const selectedEmployeeObject = sortedEmployees.find((employee: any) => employee.id.toString() === selectedEmployeeId);
   const selectedEmployeeDisplay = selectedEmployeeObject
-    ? `${selectedEmployeeObject.name} (${formatEmployeeNumber(selectedEmployeeObject.employee_id || selectedEmployeeObject.employee?.employee_id)})`
+    ? formatEmployeeOptionLabel(selectedEmployeeObject)
     : selectedEmployee?.name
-      ? `${selectedEmployee.name} (${formatEmployeeNumber(selectedEmployee.employee_id || selectedEmployee.employee?.employee_id)})`
+      ? formatEmployeeOptionLabel(selectedEmployee)
       : t('Employee');
-  const [employeeSearch, setEmployeeSearch] = useState(selectedEmployeeName);
+  const [employeeSearch, setEmployeeSearch] = useState(selectedEmployeeDisplay === t('Employee') ? '' : selectedEmployeeDisplay);
   const [isEmployeeMenuOpen, setIsEmployeeMenuOpen] = useState(false);
   const currentMonth = () => {
     const date = new Date();
@@ -40,7 +46,69 @@ export default function AttendanceRecords() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<any>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [addingClockInId, setAddingClockInId] = useState<number | null>(null);
+  const [attendanceImportMapping, setAttendanceImportMapping] = useState<any>(null);
+  const [employeeMappings, setEmployeeMappings] = useState<Record<string, string>>({});
+  const [ignoredImportGroups, setIgnoredImportGroups] = useState<Record<string, boolean>>({});
+  const [mappingEmployeeSearches, setMappingEmployeeSearches] = useState<Record<string, string>>({});
+  const [openMappingEmployeePicker, setOpenMappingEmployeePicker] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const groupedAttendanceImportRows = useMemo(() => {
+    const groups = new Map<string, any>();
+
+    (attendanceImportMapping?.rows || []).forEach((row: any) => {
+      const key = row.employee_no
+        ? `employee:${row.employee_no}`
+        : row.sheet_name
+          ? `sheet:${row.sheet_name}`
+          : `line:${row.line}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          ...row,
+          key,
+          lines: [],
+          dates: [],
+          first_clock_in: row.clock_in,
+          first_clock_out: row.clock_out,
+        });
+      }
+
+      const group = groups.get(key);
+      group.lines.push(row.line);
+      if (row.date) group.dates.push(row.date);
+      if (!group.suggested_employee_id && row.suggested_employee_id) {
+        group.suggested_employee_id = row.suggested_employee_id;
+        group.suggested_employee_name = row.suggested_employee_name;
+      }
+    });
+
+    return Array.from(groups.values());
+  }, [attendanceImportMapping]);
+
+  useEffect(() => {
+    if (!flash?.attendance_import_mapping) return;
+
+    const mapping = flash.attendance_import_mapping;
+    const defaults: Record<string, string> = {};
+
+    (mapping.rows || []).forEach((row: any) => {
+      if (row.suggested_employee_id) {
+        const key = row.employee_no
+          ? `employee:${row.employee_no}`
+          : row.sheet_name
+            ? `sheet:${row.sheet_name}`
+            : `line:${row.line}`;
+        defaults[key] = String(row.suggested_employee_id);
+      }
+    });
+
+    setAttendanceImportMapping(mapping);
+    setEmployeeMappings(defaults);
+    setIgnoredImportGroups({});
+    setMappingEmployeeSearches({});
+    setOpenMappingEmployeePicker(null);
+  }, [flash?.attendance_import_mapping]);
 
   const applyFilters = (employeeId = selectedEmployeeId, month = selectedMonth) => {
     router.get(route('hr.attendance-records.index'), {
@@ -144,6 +212,136 @@ export default function AttendanceRecords() {
     });
   };
 
+  const handleAddDefaultClockIn = (day: any) => {
+    const defaultClockInTime = day.default_clock_in_time || day.on_duty;
+    if (!day.id || !defaultClockInTime || addingClockInId === day.id) return;
+    const normalizedClockInTime = String(defaultClockInTime).slice(0, 5);
+
+    setAddingClockInId(day.id);
+    toast.loading(t('Adding clock in time...'));
+
+    router.put(route('hr.attendance-records.update', day.id), {
+      employee_id: day.employee_id,
+      date: day.date,
+      clock_in: normalizedClockInTime,
+      clock_out: day.clock_out,
+      break_hours: day.break_hours || 0,
+      is_holiday: !!day.is_holiday,
+      status: day.status === 'no_record' ? 'present' : day.status,
+      notes: day.notes || '',
+    }, {
+      preserveScroll: true,
+      onSuccess: (page: any) => {
+        toast.dismiss();
+        if (page.props.flash?.attendance_import_mapping) return;
+        if (page.props.flash?.success) toast.success(t(page.props.flash.success));
+        if (page.props.flash?.error) toast.error(t(page.props.flash.error));
+      },
+      onError: (errors: any) => {
+        toast.dismiss();
+        toast.error(typeof errors === 'string' ? errors : Object.values(errors).join(', '));
+      },
+      onFinish: () => {
+        setAddingClockInId(null);
+      },
+    });
+  };
+
+  const handleMappingChange = (mappingKey: number | string, employeeId: string) => {
+    const employee = sortedEmployees.find((item: any) => item.id.toString() === employeeId);
+
+    setEmployeeMappings((current) => ({
+      ...current,
+      [String(mappingKey)]: employeeId,
+    }));
+    setMappingEmployeeSearches((current) => ({
+      ...current,
+      [String(mappingKey)]: employee ? formatEmployeeOptionLabel(employee) : '',
+    }));
+    setOpenMappingEmployeePicker(null);
+
+    if (employeeId) {
+      setIgnoredImportGroups((current) => {
+        const next = { ...current };
+        delete next[String(mappingKey)];
+        return next;
+      });
+    }
+  };
+
+  const toggleIgnoredImportGroup = (mappingKey: string) => {
+    setIgnoredImportGroups((current) => {
+      const next = { ...current };
+
+      if (next[mappingKey]) {
+        delete next[mappingKey];
+      } else {
+        next[mappingKey] = true;
+      }
+
+      return next;
+    });
+  };
+
+  const ignoreAllUnassignedImportGroups = () => {
+    setIgnoredImportGroups((current) => {
+      const next = { ...current };
+
+      groupedAttendanceImportRows.forEach((group: any) => {
+        if (!employeeMappings[group.key]) {
+          next[group.key] = true;
+        }
+      });
+
+      return next;
+    });
+  };
+
+  const submitMappedAttendanceImport = () => {
+    if (!attendanceImportMapping?.token) return;
+
+    const missingGroup = groupedAttendanceImportRows.find((group: any) => !employeeMappings[group.key] && !ignoredImportGroups[group.key]);
+    if (missingGroup) {
+      toast.error(t('Please select or ignore every attendance employee.'));
+      return;
+    }
+
+    const lineMappings = groupedAttendanceImportRows.reduce((mappings: Record<string, string>, group: any) => {
+      if (ignoredImportGroups[group.key]) return mappings;
+
+      group.lines.forEach((line: number | string) => {
+        mappings[String(line)] = employeeMappings[group.key];
+      });
+      return mappings;
+    }, {});
+    const ignoredLines = groupedAttendanceImportRows.flatMap((group: any) => (
+      ignoredImportGroups[group.key] ? group.lines.map((line: number | string) => String(line)) : []
+    ));
+
+    toast.loading(t('Importing attendance sheet...'));
+    router.post(route('hr.attendance-records.import-sheet'), {
+      import_token: attendanceImportMapping.token,
+      employee_mappings: lineMappings,
+      ignored_attendance_lines: ignoredLines,
+    }, {
+      preserveScroll: true,
+      onSuccess: (page: any) => {
+        setAttendanceImportMapping(null);
+        setEmployeeMappings({});
+        setIgnoredImportGroups({});
+        setMappingEmployeeSearches({});
+        setOpenMappingEmployeePicker(null);
+        toast.dismiss();
+        if (page.props.flash?.success) toast.success(t(page.props.flash.success));
+        if (page.props.flash?.error) toast.error(t(page.props.flash.error));
+      },
+      onError: (errors: any) => {
+        toast.dismiss();
+        toast.error(typeof errors === 'string' ? errors : Object.values(errors).join(', '));
+      },
+    });
+  };
+
   const handleDeleteConfirm = () => {
     toast.loading(t('Deleting attendance record...'));
     router.delete(route('hr.attendance-records.destroy', currentItem.id), {
@@ -205,14 +403,14 @@ export default function AttendanceRecords() {
       : []),
   ];
 
-  const filteredEmployees = employees.filter((employee: any) =>
-    employee.name.toLowerCase().includes(employeeSearch.toLowerCase())
+  const filteredEmployees = sortedEmployees.filter((employee: any) =>
+    formatEmployeeOptionLabel(employee).toLowerCase().includes(employeeSearch.toLowerCase())
   );
 
   const selectEmployee = (employee: any) => {
     const employeeId = employee.id.toString();
     setSelectedEmployeeId(employeeId);
-    setEmployeeSearch(employee.name);
+    setEmployeeSearch(formatEmployeeOptionLabel(employee));
     setIsEmployeeMenuOpen(false);
     applyFilters(employeeId, selectedMonth);
   };
@@ -250,7 +448,7 @@ export default function AttendanceRecords() {
             onBlur={(event) => {
               if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
                 setIsEmployeeMenuOpen(false);
-                setEmployeeSearch(selectedEmployeeName);
+                setEmployeeSearch(selectedEmployeeDisplay === t('Employee') ? '' : selectedEmployeeDisplay);
               }
             }}
           >
@@ -258,6 +456,7 @@ export default function AttendanceRecords() {
               value={employeeSearch}
               placeholder={t('Search Employee')}
               onFocus={(event) => {
+                setEmployeeSearch('');
                 setIsEmployeeMenuOpen(true);
                 event.currentTarget.select();
               }}
@@ -279,7 +478,7 @@ export default function AttendanceRecords() {
                         selectEmployee(employee);
                       }}
                     >
-                      {employee.name} {employee.employee_id || employee.employee?.employee_id ? `(${formatEmployeeNumber(employee.employee_id || employee.employee?.employee_id)})` : ''}
+                      {formatEmployeeOptionLabel(employee)}
                     </button>
                   ))
                 ) : (
@@ -337,7 +536,15 @@ export default function AttendanceRecords() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {attendanceDays.map((day: any) => (
+            {attendanceDays.map((day: any) => {
+              const canAddDefaultClockIn = Boolean(
+                day.missing_clock_in
+                && day.id
+                && (day.default_clock_in_time || day.on_duty)
+                && hasPermission(permissions, 'edit-attendance-records')
+              );
+
+              return (
               <TableRow key={day.date}>
                 <TableCell className="font-medium">{window.appSettings?.formatDateTimeSimple?.(day.date, false) || day.date}</TableCell>
                 <TableCell>{day.day_name}</TableCell>
@@ -358,13 +565,44 @@ export default function AttendanceRecords() {
                   </div>
                 </TableCell>
                 <TableCell className="font-mono text-xs">{formatTime(day.on_duty)} - {formatTime(day.off_duty)}</TableCell>
-                <TableCell><span className="font-mono text-green-700"><LogIn className="mr-1 inline h-3 w-3" />{formatTime(day.clock_in)}</span></TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center gap-1 font-mono text-green-700">
+                    <LogIn className="h-3 w-3" />
+                    {formatTime(day.clock_in)}
+                    {canAddDefaultClockIn && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="ml-1 h-7 w-7 text-green-700"
+                        title={t('Add default clock in time')}
+                        disabled={addingClockInId === day.id}
+                        onClick={() => handleAddDefaultClockIn(day)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </span>
+                </TableCell>
                 <TableCell><span className="font-mono text-red-700"><LogOut className="mr-1 inline h-3 w-3" />{formatTime(day.clock_out)}</span></TableCell>
                 <TableCell><span className="font-mono"><Clock className="mr-1 inline h-3 w-3" />{formatHours(day.total_hours)}</span></TableCell>
                 <TableCell className={day.late_minutes > 0 ? 'font-medium text-amber-700' : ''}>{formatMinutes(day.late_minutes)}</TableCell>
                 <TableCell className={day.early_leave_minutes > 0 ? 'font-medium text-orange-700' : ''}>{formatMinutes(day.early_leave_minutes)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    {canAddDefaultClockIn && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-green-700"
+                        title={t('Add default clock in time')}
+                        disabled={addingClockInId === day.id}
+                        onClick={() => handleAddDefaultClockIn(day)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    )}
                     {day.id && hasPermission(permissions, 'edit-attendance-records') && (
                       <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(day)}>
                         <Pencil className="h-4 w-4" />
@@ -384,7 +622,8 @@ export default function AttendanceRecords() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -401,9 +640,9 @@ export default function AttendanceRecords() {
               type: 'select',
               required: true,
               searchable: true,
-              options: employees.map((emp: any) => ({
+              options: sortedEmployees.map((emp: any) => ({
                 value: emp.id.toString(),
-                label: `${emp.name}${emp.employee_id || emp.employee?.employee_id ? ` (${formatEmployeeNumber(emp.employee_id || emp.employee?.employee_id)})` : ''}`,
+                label: formatEmployeeOptionLabel(emp),
               })),
             },
             { name: 'date', label: t('Date'), type: 'date', required: true },
@@ -438,6 +677,137 @@ export default function AttendanceRecords() {
         itemName={selectedEmployee?.name || ''}
         entityName="attendance record"
       />
+
+      <Dialog open={!!attendanceImportMapping} onOpenChange={(open) => !open && setAttendanceImportMapping(null)}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{t('Confirm Attendance Employees')}</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <span>{t('Select an employee to import, or ignore entries you do not want to import.')}</span>
+            <Button type="button" variant="outline" size="sm" onClick={ignoreAllUnassignedImportGroups}>
+              {t('Ignore All Unassigned')}
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            {groupedAttendanceImportRows.map((group: any) => (
+              <div
+                key={group.key}
+                className={`relative grid overflow-visible gap-3 rounded-lg border p-3 shadow-sm md:grid-cols-[1fr_1.2fr] ${
+                  ignoredImportGroups[group.key] ? 'border-slate-200 bg-slate-50 opacity-75' : 'border-slate-200 bg-white'
+                } ${openMappingEmployeePicker === group.key ? 'z-50' : 'z-0'}`}
+              >
+                <div className="min-w-0 space-y-1 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-slate-950">
+                      {t('Employee No')} {group.employee_no || group.sheet_name || '-'}
+                    </span>
+                    {ignoredImportGroups[group.key] && (
+                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">
+                        {t('Ignored')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-slate-600">
+                    {t('Rows')}: <span className="font-mono">{group.lines.length}</span>
+                  </div>
+                  <div className="text-slate-600">
+                    {t('Dates')}: <span className="font-mono">{group.dates[0] || '-'}{group.dates.length > 1 ? ` - ${group.dates[group.dates.length - 1]}` : ''}</span>
+                  </div>
+                  <div className="text-slate-600">
+                    {t('Sheet name')}: <span className="font-mono">{group.sheet_name || '-'}</span>
+                  </div>
+                  <div className="text-slate-600">
+                    {t('Sample clock')}: <span className="font-mono">{group.first_clock_in || '-'} - {group.first_clock_out || '-'}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-start gap-2 sm:flex-row">
+                  <div
+                    className="relative w-full min-w-0 sm:flex-1"
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                        setOpenMappingEmployeePicker(null);
+                        setMappingEmployeeSearches((current) => {
+                          const selectedEmployee = sortedEmployees.find((employee: any) => employee.id.toString() === employeeMappings[group.key]);
+                          return {
+                            ...current,
+                            [group.key]: selectedEmployee ? formatEmployeeOptionLabel(selectedEmployee) : '',
+                          };
+                        });
+                      }
+                    }}
+                  >
+                    <Input
+                      value={
+                        openMappingEmployeePicker === group.key
+                          ? mappingEmployeeSearches[group.key] || ''
+                          : sortedEmployees.find((employee: any) => employee.id.toString() === employeeMappings[group.key])
+                            ? formatEmployeeOptionLabel(sortedEmployees.find((employee: any) => employee.id.toString() === employeeMappings[group.key]))
+                            : ''
+                      }
+                      disabled={!!ignoredImportGroups[group.key]}
+                      placeholder={t('Search Employee')}
+                      onFocus={(event) => {
+                        setOpenMappingEmployeePicker(group.key);
+                        setMappingEmployeeSearches((current) => ({ ...current, [group.key]: '' }));
+                        event.currentTarget.select();
+                      }}
+                      onChange={(event) => {
+                        setOpenMappingEmployeePicker(group.key);
+                        setMappingEmployeeSearches((current) => ({ ...current, [group.key]: event.target.value }));
+                      }}
+                      className="h-11 bg-white text-sm disabled:bg-slate-100 disabled:text-slate-500"
+                    />
+
+                    {openMappingEmployeePicker === group.key && !ignoredImportGroups[group.key] && (
+                      <div className="absolute left-0 right-0 top-full z-[100] mt-2 max-h-80 overflow-y-auto rounded-lg border border-slate-200 bg-white py-2 shadow-xl">
+                        {sortedEmployees
+                          .filter((employee: any) => formatEmployeeOptionLabel(employee).toLowerCase().includes((mappingEmployeeSearches[group.key] || '').toLowerCase()))
+                          .map((employee: any) => (
+                            <button
+                              key={employee.id}
+                              type="button"
+                              className={`block w-full px-4 py-2.5 text-left text-sm text-slate-950 hover:bg-blue-50 hover:text-blue-700 ${
+                                employeeMappings[group.key] === employee.id.toString() ? 'bg-blue-50 text-blue-700' : ''
+                              }`}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => handleMappingChange(group.key, employee.id.toString())}
+                            >
+                              {formatEmployeeOptionLabel(employee)}
+                            </button>
+                          ))}
+                        {sortedEmployees.filter((employee: any) => formatEmployeeOptionLabel(employee).toLowerCase().includes((mappingEmployeeSearches[group.key] || '').toLowerCase())).length === 0 && (
+                          <div className="px-4 py-3 text-sm text-slate-500">{t('No employees found')}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant={ignoredImportGroups[group.key] ? 'outline' : 'ghost'}
+                    onClick={() => toggleIgnoredImportGroup(group.key)}
+                    className="shrink-0 self-start"
+                  >
+                    {ignoredImportGroups[group.key] ? t('Undo Ignore') : t('Ignore')}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAttendanceImportMapping(null)}>
+              {t('Cancel')}
+            </Button>
+            <Button type="button" onClick={submitMappedAttendanceImport}>
+              {t('Import Attendance')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageTemplate>
   );
 }

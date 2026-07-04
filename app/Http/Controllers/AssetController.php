@@ -71,7 +71,7 @@ class AssetController extends Controller
             $query->orderBy('id', 'desc');
         }
 
-        $assets = $query->paginate($request->per_page ?? 10);
+        $assets = $query->paginate($request->per_page ?? 50);
 
         // Get asset types for filter dropdown
         $assetTypes = AssetType::whereIn('created_by', getCompanyAndUsersId())
@@ -87,7 +87,7 @@ class AssetController extends Controller
             ->toArray();
 
         // Get employees for assignment dropdown
-        $employees = User::with('employee')
+        $employees = User::with('employee.department')
             ->where('type', 'employee')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
@@ -308,7 +308,7 @@ class AssetController extends Controller
             ->get();
 
         // Get employees for assignment dropdown
-        $employees = User::with('employee')
+        $employees = User::with('employee.department')
             ->where('type', 'employee')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
@@ -746,7 +746,7 @@ class AssetController extends Controller
             $query->orderBy('purchase_date', 'desc');
         }
 
-        $assets = $query->paginate($request->per_page ?? 10);
+        $assets = $query->paginate($request->per_page ?? 50);
 
         // Get asset types for filter dropdown
         $assetTypes = AssetType::whereIn('created_by', getCompanyAndUsersId())

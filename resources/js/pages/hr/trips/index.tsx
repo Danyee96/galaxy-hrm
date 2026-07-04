@@ -9,6 +9,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus, FileText } from 'lucide-react';
@@ -493,7 +494,7 @@ export default function Trips() {
     { value: '', label: t('All Employees'), disabled: true },
     ...(employees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: `${emp.name} (${emp.employee_id})`
+      label: formatEmployeeOptionLabel(emp)
     }))
   ];
 
@@ -559,7 +560,7 @@ export default function Trips() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.trips.index'), {
               page: 1,

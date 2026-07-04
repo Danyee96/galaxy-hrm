@@ -55,7 +55,7 @@ class CandidateController extends Controller
             }
 
             $query->orderBy('created_at', 'desc');
-            $candidates = $query->paginate($request->per_page ?? 10);
+            $candidates = $query->paginate($request->per_page ?? 50);
 
             $jobPostings = JobPosting::whereIn('created_by', getCompanyAndUsersId())
                 ->select('id', 'title', 'job_code')
@@ -66,7 +66,7 @@ class CandidateController extends Controller
                 ->select('id', 'name')
                 ->get();
 
-            $employees = User::with('employee')
+            $employees = User::with('employee.department')
                 ->where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
@@ -76,7 +76,8 @@ class CandidateController extends Controller
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
-                        'employee_id' => $user->employee->employee_id ?? ''
+                        'employee_id' => $user->employee->employee_id ?? '',
+                        'department_name' => $user->employee?->department?->name ?? '',
                     ];
                 });
 

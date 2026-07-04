@@ -24,7 +24,7 @@ class EmailTemplateController extends Controller
         $query->orderBy($sortField, $sortDirection);
         
         // Pagination
-        $perPage = $request->get('per_page', 10);
+        $perPage = $request->get('per_page', 50);
         $templates = $query->paginate($perPage);
         
         return Inertia::render('email-templates/index', [

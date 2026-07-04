@@ -118,7 +118,7 @@ class AnnouncementController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $announcements = $query->paginate($request->per_page ?? 10);
+            $announcements = $query->paginate($request->per_page ?? 50);
 
             // Get departments for filter dropdown
             $departments = Department::whereIn('created_by', getCompanyAndUsersId())

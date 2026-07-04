@@ -35,7 +35,7 @@ class CandidateSourceController extends Controller
             }
 
             $query->orderBy('created_at', 'desc');
-            $candidateSources = $query->paginate($request->per_page ?? 10);
+            $candidateSources = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/recruitment/candidate-sources/index', [
                 'candidateSources' => $candidateSources,

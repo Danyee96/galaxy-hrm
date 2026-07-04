@@ -66,7 +66,7 @@ class TrainingProgramController extends Controller
             // Add counts
             $query->withCount(['sessions', 'employeeTrainings']);
 
-            $trainingPrograms = $query->paginate($request->per_page ?? 10);
+            $trainingPrograms = $query->paginate($request->per_page ?? 50);
 
             // Get training types for filter dropdown with branch and departments
             $trainingTypes = TrainingType::with(['branch', 'departments'])

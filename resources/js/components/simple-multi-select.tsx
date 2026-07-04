@@ -1,5 +1,6 @@
 // components/simple-multi-select.tsx
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,12 +29,19 @@ export function SimpleMultiSelect({
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Handle click outside to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        !dropdownRef.current?.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -43,6 +51,42 @@ export function SimpleMultiSelect({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || !containerRef.current) return;
+
+    const updatePosition = () => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const width = Math.min(rect.width, window.innerWidth - 16);
+      const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+      const availableBelow = window.innerHeight - rect.bottom - 12;
+      const availableAbove = rect.top - 12;
+      const preferredHeight = Number.parseInt(String(dropdownHeight), 10) || 320;
+      const openUpward = availableBelow < Math.min(preferredHeight, 260) && availableAbove > availableBelow;
+      const maxHeight = Math.max(160, Math.min(preferredHeight, (openUpward ? availableAbove : availableBelow) - 8));
+
+      setDropdownStyle({
+        position: 'fixed',
+        left,
+        width,
+        zIndex: 70000,
+        maxHeight,
+        height: maxHeight,
+        top: openUpward ? Math.max(8, rect.top - maxHeight - 8) : rect.bottom + 8,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, dropdownHeight, selected.length, searchTerm]);
   
   // Handle selection
   const handleSelect = (value: string) => {
@@ -71,8 +115,8 @@ export function SimpleMultiSelect({
   
   return (
     <div ref={containerRef} className={`relative w-full max-w-full ${className}`}>
-      <div 
-        className="flex flex-wrap items-center gap-2 p-3 border border-slate-200 bg-white rounded-2xl min-h-[60px] cursor-text w-full shadow-sm transition focus-within:border-slate-400"
+      <div
+        className="flex max-h-48 flex-wrap items-center gap-2 overflow-y-auto border border-slate-200 bg-white p-3 rounded-2xl min-h-[60px] cursor-text w-full shadow-sm transition focus-within:border-slate-400"
         onClick={() => setIsOpen(true)}
       >
         {selected.map(value => {
@@ -106,10 +150,11 @@ export function SimpleMultiSelect({
         />
       </div>
       
-      {isOpen && (
+      {isOpen && createPortal(
         <div
-          className="absolute z-50 w-full max-w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-y-auto divide-y divide-slate-200"
-          style={{ height: dropdownHeight, maxHeight: '70vh' }}
+          ref={dropdownRef}
+          className="overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl divide-y divide-slate-200"
+          style={dropdownStyle}
         >
           {filteredOptions.length > 0 ? filteredOptions.map(option => (
             <div
@@ -127,7 +172,8 @@ export function SimpleMultiSelect({
               No employees found.
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

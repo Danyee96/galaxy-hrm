@@ -37,7 +37,7 @@ class PlanRequestController extends BaseController
             $query->where('status', $request->status);
         }
 
-        $perPage = $request->get('per_page', 10);
+        $perPage = $request->get('per_page', 50);
         $planRequests = $query->latest()->paginate($perPage);
 
         return Inertia::render('plans/plan-request', [

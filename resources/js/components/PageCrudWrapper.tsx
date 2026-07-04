@@ -538,7 +538,7 @@ export function PageCrudWrapper({
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">{t("Per Page")}:</Label>
               <Select 
-                value={pageFilters.per_page?.toString() || "10"} 
+                value={pageFilters.per_page?.toString() || "50"}
                 onValueChange={(value) => {
                   const params: any = { page: 1, per_page: parseInt(value) };
                   

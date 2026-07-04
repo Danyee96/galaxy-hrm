@@ -36,7 +36,7 @@ class OfferTemplateController extends Controller
             }
 
             $query->orderBy('created_at', 'desc');
-            $offerTemplates = $query->paginate($request->per_page ?? 10);
+            $offerTemplates = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/recruitment/offer-templates/index', [
                 'offerTemplates' => $offerTemplates,

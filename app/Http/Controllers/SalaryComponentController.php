@@ -52,7 +52,7 @@ class SalaryComponentController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $salaryComponents = $query->paginate($request->per_page ?? 10);
+            $salaryComponents = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/salary-components/index', [
                 'salaryComponents' => $salaryComponents,

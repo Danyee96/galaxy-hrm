@@ -2,8 +2,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { PageTemplate } from '@/components/page-template';
 import { usePage, router } from '@inertiajs/react';
-import { ArrowLeft, Printer, Users, DollarSign } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Users, DollarSign } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function PayrollRunShow() {
@@ -70,6 +71,10 @@ export default function PayrollRunShow() {
   };
 
   const payrollEntries = payrollRun.payroll_entries || [];
+
+  const handleDownload = () => {
+    window.open(route('hr.payroll-runs.download-pdf', payrollRun.id), '_blank');
+  };
 
   const handlePrint = useCallback(() => {
     const root = document.documentElement;
@@ -154,6 +159,12 @@ export default function PayrollRunShow() {
       icon: <Printer className="h-4 w-4 mr-2" />,
       variant: 'default',
       onClick: handlePrint
+    });
+    pageActions.unshift({
+      label: t('Download Payroll'),
+      icon: <Download className="h-4 w-4 mr-2" />,
+      variant: 'outline',
+      onClick: handleDownload
     });
   }
 
@@ -427,8 +438,14 @@ export default function PayrollRunShow() {
 
       {/* Payroll Run Details */}
       <Card className="no-print mb-6">
-        <CardHeader>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>{t('Payroll Run Details')}</CardTitle>
+          {payrollRun.status === 'completed' && (
+            <Button type="button" variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="mr-2 h-4 w-4" />
+              {t('Download Payroll')}
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -500,7 +517,7 @@ export default function PayrollRunShow() {
               const latePenalty = getDisplayedLatePenalty(entry);
               const absentDays = entry.unpaid_leave_days || entry.absent_days || 0;
               const fineAmount = getManualFineAmount(entry);
-              const hasBonus = Number(entry.bonus_amount || 0) > 0;
+              const hasBonus = Number(entry.profile_bonus_amount || 0) > 0;
 
               return (
                 <div key={entry.id || `${entry.employee_id}-${index}`} className="payroll-slip">

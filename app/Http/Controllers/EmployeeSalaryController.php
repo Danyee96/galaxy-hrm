@@ -16,7 +16,7 @@ class EmployeeSalaryController extends Controller
     {
         if (Auth::user()->can('manage-employee-salaries')) {
             // Auto-create salary records for employees who don't have one
-            $companyEmployees = User::with('employee')
+            $companyEmployees = User::with('employee.department')
                 ->where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
@@ -65,7 +65,8 @@ class EmployeeSalaryController extends Controller
                     // Fetch salary record once
                     $employeeSalary = EmployeeSalary::where('employee_id', $employee->id)->first();
 
-                    // If salary record does not exist → create
+                    // Create missing salary rows from employee data only. Existing employee master
+                    // data must be changed from the Employee edit screen, not this module.
                     if (!$employeeSalary) {
 
                         EmployeeSalary::create([
@@ -77,24 +78,6 @@ class EmployeeSalaryController extends Controller
                         ]);
 
                         continue;
-                    }
-
-                    // If base_salary is NULL in employee table → update employee table
-                    if (is_null($employeeModel->base_salary)) {
-
-                        if (!is_null($employeeSalary->basic_salary)) {
-                            $employeeModel->base_salary = $employeeSalary->basic_salary;
-                            $employeeModel->save();
-                        }
-
-                    }
-                    // If base_salary exists → update salary table
-                    else {
-
-                        if ($employeeSalary->basic_salary != $employeeModel->base_salary) {
-                            $employeeSalary->basic_salary = $employeeModel->base_salary;
-                            $employeeSalary->save();
-                        }
                     }
                 }
             }
@@ -137,7 +120,7 @@ class EmployeeSalaryController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $employeeSalaries = $query->paginate($request->per_page ?? 10);
+            $employeeSalaries = $query->paginate($request->per_page ?? 50);
 
             // Load component names and types for each salary record
             $employeeSalaries->getCollection()->transform(function ($salary) {
@@ -157,7 +140,14 @@ class EmployeeSalaryController extends Controller
             // Get employees for filter dropdown
             $employees = User::where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
-                ->get(['id', 'name']);
+                ->with('employee.department')
+                ->get(['id', 'name'])
+                ->map(fn (User $employee) => [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'employee_id' => $employee->employee?->employee_id,
+                    'department_name' => $employee->employee?->department?->name,
+                ]);
 
             // Get salary components for form
             $salaryComponents = SalaryComponent::where('status', 'active')
@@ -187,7 +177,7 @@ class EmployeeSalaryController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))
@@ -304,7 +294,7 @@ class EmployeeSalaryController extends Controller
             try {
                 // $employeeSalary = EmployeeSalary::where('id', $employeeSalaryId)
                 //     ->whereIn('created_by', getCompanyAndUsersId())
-                //     ->with('employee')
+                //     ->with('employee.department')
                 //     ->first();
 
                 $employeeSalary = EmployeeSalary::with(['employee'])->where(function ($q) {
@@ -358,7 +348,7 @@ class EmployeeSalaryController extends Controller
         try {
             $employeeSalary = EmployeeSalary::where('id', $employeeSalaryId)
                 ->whereIn('created_by', getCompanyAndUsersId())
-                ->with('employee')
+                ->with('employee.employee.department')
                 ->first();
 
             $payrollRun = \App\Models\PayrollRun::where('id', $payrollRunId)

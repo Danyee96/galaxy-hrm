@@ -14,6 +14,7 @@ use App\Services\WorkingScheduleService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -51,17 +52,20 @@ class AttendanceRecordController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))
             ->select('id', 'name')
+            ->orderByRaw($this->userEmployeeIdSortExpression('users.id').' asc')
+            ->orderBy('name')
             ->get()
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'employee_id' => $user->employee->employee_id ?? '',
+                    'department_name' => $user->employee?->department?->name ?? '',
                 ];
             });
 
@@ -143,6 +147,8 @@ class AttendanceRecordController extends Controller
                 'clock_out' => $record?->clock_out,
                 'on_duty' => $record?->on_duty,
                 'off_duty' => $record?->off_duty,
+                'default_clock_in_time' => $record?->on_duty ?: $record?->shift?->start_time,
+                'break_hours' => (float) ($record?->break_hours ?? 0),
                 'total_hours' => (float) ($record?->total_hours ?? 0),
                 'overtime_hours' => (float) ($record?->overtime_hours ?? 0),
                 'late_minutes' => (int) ($record?->late_minutes ?? 0),
@@ -264,16 +270,59 @@ class AttendanceRecordController extends Controller
         }
 
         $validated = $request->validate([
-            'file' => 'required|file|max:10240',
+            'file' => 'nullable|required_without:import_token|file|max:10240',
+            'import_token' => 'nullable|string',
+            'employee_mappings' => 'nullable|array',
+            'employee_mappings.*' => 'nullable|integer|exists:users,id',
+            'ignored_attendance_lines' => 'nullable|array',
+            'ignored_attendance_lines.*' => 'integer',
         ]);
 
         try {
+            if ($request->filled('import_token')) {
+                $token = basename((string) $validated['import_token']);
+                $path = Storage::path('attendance-imports/'.$token);
+
+                if (! is_file($path)) {
+                    return redirect()->back()->with('error', __('Attendance import file has expired. Please upload it again.'));
+                }
+
+                $stats = $importService->import(
+                    $path,
+                    creatorId(),
+                    null,
+                    $validated['employee_mappings'] ?? [],
+                    $validated['ignored_attendance_lines'] ?? []
+                );
+                Storage::delete('attendance-imports/'.$token);
+
+                return redirect()->back()->with('success', __('Attendance sheet imported. Created: :created, Updated: :updated, Employees Created: :employees, Skipped: :skipped', [
+                    'created' => $stats['attendance_created'],
+                    'updated' => $stats['attendance_updated'],
+                    'employees' => $stats['employees_created'],
+                    'skipped' => $stats['skipped'],
+                ]));
+            }
+
+            $file = $validated['file'];
             $allowedExtensions = ['xls', 'xlsx', 'xlsm', 'xlt', 'xltx', 'xltm', 'csv'];
-            if (! in_array(strtolower($validated['file']->getClientOriginalExtension()), $allowedExtensions, true)) {
+            $extension = strtolower($file->getClientOriginalExtension());
+            if (! in_array($extension, $allowedExtensions, true)) {
                 return redirect()->back()->with('error', __('Please upload an Excel attendance sheet.'));
             }
 
-            $stats = $importService->import($validated['file'], creatorId());
+            $missingRows = $importService->missingEmployeeRows($file);
+            if (! empty($missingRows)) {
+                $token = (string) Str::uuid().'.'.$extension;
+                $file->storeAs('attendance-imports', $token);
+
+                return redirect()->back()->with('attendance_import_mapping', [
+                    'token' => $token,
+                    'rows' => $missingRows,
+                ]);
+            }
+
+            $stats = $importService->import($file, creatorId());
 
             return redirect()->back()->with('success', __('Attendance sheet imported. Created: :created, Updated: :updated, Employees Created: :employees, Skipped: :skipped', [
                 'created' => $stats['attendance_created'],

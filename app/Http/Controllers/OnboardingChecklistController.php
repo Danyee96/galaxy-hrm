@@ -39,7 +39,7 @@ class OnboardingChecklistController extends Controller
             }
 
             $query->orderBy('is_default', 'desc')->orderBy('id', 'desc');
-            $onboardingChecklists = $query->paginate($request->per_page ?? 10);
+            $onboardingChecklists = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/recruitment/onboarding-checklists/index', [
                 'onboardingChecklists' => $onboardingChecklists,

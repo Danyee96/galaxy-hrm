@@ -35,7 +35,7 @@ class InterviewTypeController extends Controller
             }
 
             $query->orderBy('created_at', 'desc');
-            $interviewTypes = $query->paginate($request->per_page ?? 10);
+            $interviewTypes = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/recruitment/interview-types/index', [
                 'interviewTypes' => $interviewTypes,

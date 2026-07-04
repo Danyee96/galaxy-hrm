@@ -7,6 +7,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus } from 'lucide-react';
@@ -406,7 +407,7 @@ export default function Interviews() {
 
   const employeeOptions = (employees || []).map((emp: any) => ({
     value: emp.id.toString(),
-    label: emp.name || `${emp.first_name} ${emp.last_name}` || emp.employee_id
+    label: formatEmployeeOptionLabel(emp)
   }));
 
   return (
@@ -448,7 +449,7 @@ export default function Interviews() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.recruitment.interviews.index'), { 
               page: 1, 

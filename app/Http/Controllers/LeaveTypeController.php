@@ -42,7 +42,7 @@ class LeaveTypeController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $leaveTypes = $query->paginate($request->per_page ?? 10);
+            $leaveTypes = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/leave-types/index', [
                 'leaveTypes' => $leaveTypes,

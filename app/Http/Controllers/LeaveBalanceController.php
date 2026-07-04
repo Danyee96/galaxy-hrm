@@ -62,12 +62,19 @@ class LeaveBalanceController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $leaveBalances = $query->paginate($request->per_page ?? 10);
+            $leaveBalances = $query->paginate($request->per_page ?? 50);
 
             // Get employees for filter dropdown
             $employees = User::where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
-                ->get(['id', 'name']);
+                ->with('employee.department')
+                ->get(['id', 'name'])
+                ->map(fn (User $employee) => [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'employee_id' => $employee->employee?->employee_id,
+                    'department_name' => $employee->employee?->department?->name,
+                ]);
 
             // Get leave types for filter dropdown
             $leaveTypes = LeaveType::whereIn('created_by', getCompanyAndUsersId())
@@ -105,7 +112,7 @@ class LeaveBalanceController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

@@ -82,7 +82,7 @@ class EmployeeReviewController extends Controller
                 $query->orderBy('review_date', 'desc');
             }
 
-            $reviews = $query->paginate($request->per_page ?? 10);
+            $reviews = $query->paginate($request->per_page ?? 50);
 
             // Get review cycles for filter dropdown
             $reviewCycles = ReviewCycle::whereIn('created_by', getCompanyAndUsersId())
@@ -112,7 +112,7 @@ class EmployeeReviewController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))
@@ -123,6 +123,7 @@ class EmployeeReviewController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'employee_id' => $user->employee->employee_id ?? '',
+                    'department_name' => $user->employee?->department?->name ?? '',
                     'type' => $user->type,
                 ];
             });

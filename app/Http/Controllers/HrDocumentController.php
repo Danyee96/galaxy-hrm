@@ -52,7 +52,7 @@ class HrDocumentController extends Controller
                 ->update(['status' => 'Expired']);
 
             $query->orderBy('id', 'desc');
-            $hrDocuments = $query->paginate($request->per_page ?? 10);
+            $hrDocuments = $query->paginate($request->per_page ?? 50);
 
             $categories = DocumentCategory::whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')

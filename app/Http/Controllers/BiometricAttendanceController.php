@@ -133,7 +133,7 @@ class BiometricAttendanceController extends Controller
             }
 
             // Manual pagination for collection
-            $perPage = $request->per_page ?? 10;
+            $perPage = $request->per_page ?? 50;
             $currentPage = $request->page ?? 1;
             $total = $query->count();
             $items = $query->forPage($currentPage, $perPage)->values();

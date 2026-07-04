@@ -65,7 +65,7 @@ class UserController extends BaseController
             }
 
             // Handle pagination
-            $perPage = $request->has('per_page') ? (int) $request->per_page : 10;
+            $perPage = $request->has('per_page') ? (int) $request->per_page : 50;
             $users = $userQuery->where('type', '!=', 'employee')->paginate($perPage)->withQueryString();
 
             # Roles listing - Get all roles without filtering

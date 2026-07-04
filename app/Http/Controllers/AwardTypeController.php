@@ -46,7 +46,7 @@ class AwardTypeController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $awardTypes = $query->paginate($request->per_page ?? 10);
+            $awardTypes = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/award-types/index', [
                 'awardTypes' => $awardTypes,

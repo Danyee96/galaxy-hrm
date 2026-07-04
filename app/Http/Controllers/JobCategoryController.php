@@ -46,7 +46,7 @@ class JobCategoryController extends Controller
                 $query->orderBy('id', 'desc');
             }
 
-            $jobCategories = $query->paginate($request->per_page ?? 10);
+            $jobCategories = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/recruitment/job-categories/index', [
                 'jobCategories' => $jobCategories,

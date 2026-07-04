@@ -9,8 +9,10 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
+import { formatEmployeeOptionLabel } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
+import { InlineDateRangeCalendar, InlineMonthCalendar } from '@/components/ui/date-picker';
 
 export default function PayrollRuns() {
   const { t } = useTranslation();
@@ -38,6 +40,79 @@ export default function PayrollRuns() {
   // Count active filters
   const activeFilterCount = () => {
     return (searchTerm ? 1 : 0) + (selectedStatus !== 'all' ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+  };
+
+  const toDateInputValue = (value?: string) => {
+    return value ? String(value).slice(0, 10) : '';
+  };
+
+  const monthValueFromDate = (value?: string) => {
+    return value ? String(value).slice(0, 7) : '';
+  };
+
+  const endOfMonthValue = (month: string) => {
+    const [year, monthNumber] = month.split('-').map(Number);
+    const lastDay = new Date(year, monthNumber, 0).getDate();
+    return `${month}-${String(lastDay).padStart(2, '0')}`;
+  };
+
+  const renderPayPeriodRange = (_field: any, formData: any, onChange: (name: string, value: any) => void) => {
+    const startValue = toDateInputValue(formData.pay_period_start);
+    const endValue = toDateInputValue(formData.pay_period_end);
+    const periodMode = formData.pay_period_mode || 'range';
+    const disabled = formMode === 'view';
+
+    const switchMode = (mode: 'range' | 'month') => {
+      onChange('pay_period_mode', mode);
+      onChange('pay_period_start', '');
+      onChange('pay_period_end', '');
+    };
+
+    const handleMonthChange = (month: string) => {
+      if (!month) return;
+
+      onChange('pay_period_start', `${month}-01`);
+      onChange('pay_period_end', endOfMonthValue(month));
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => switchMode('range')}
+            className={`h-9 rounded-md text-sm font-semibold transition ${periodMode === 'range' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
+          >
+            {t('Pay Period')}
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => switchMode('month')}
+            className={`h-9 rounded-md text-sm font-semibold transition ${periodMode === 'month' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
+          >
+            {t('Month')}
+          </button>
+        </div>
+
+        {periodMode === 'range' ? (
+          <InlineDateRangeCalendar
+            startValue={startValue}
+            endValue={endValue}
+            onStartChange={(value) => onChange('pay_period_start', value)}
+            onEndChange={(value) => onChange('pay_period_end', value)}
+            disabled={disabled}
+          />
+        ) : (
+          <InlineMonthCalendar
+            value={monthValueFromDate(startValue)}
+            onChange={handleMonthChange}
+            disabled={disabled}
+          />
+        )}
+      </div>
+    );
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -92,6 +167,9 @@ export default function PayrollRuns() {
       case 'print':
         window.open(`${route('hr.payroll-runs.show', item.id)}?print=1`, '_blank');
         break;
+      case 'download':
+        window.open(route('hr.payroll-runs.download-pdf', item.id), '_blank');
+        break;
     }
   };
 
@@ -102,6 +180,11 @@ export default function PayrollRuns() {
   };
 
   const handleFormSubmit = (formData: any) => {
+    if (!formData.pay_period_start || !formData.pay_period_end) {
+      toast.error(t('Please select a complete pay period range.'));
+      return;
+    }
+
     if (formMode === 'create') {
       toast.loading(t('Creating payroll run...'));
 
@@ -350,6 +433,14 @@ export default function PayrollRuns() {
       condition: (item: any) => item.status === 'completed'
     },
     {
+      label: t('Download Payroll'),
+      icon: 'Download',
+      action: 'download',
+      className: 'text-emerald-600',
+      requiredPermission: 'view-payroll-runs',
+      condition: (item: any) => item.status === 'completed'
+    },
+    {
       label: t('Delete'),
       icon: 'Trash2',
       action: 'delete',
@@ -411,7 +502,7 @@ export default function PayrollRuns() {
           activeFilterCount={activeFilterCount}
           onResetFilters={handleResetFilters}
           onApplyFilters={applyFilters}
-          currentPerPage={pageFilters.per_page?.toString() || "10"}
+          currentPerPage={pageFilters.per_page?.toString() || "50"}
           onPerPageChange={(value) => {
             router.get(route('hr.payroll-runs.index'), {
               page: 1,
@@ -464,8 +555,13 @@ export default function PayrollRuns() {
         formConfig={{
           fields: [
             { name: 'title', label: t('Title'), type: 'text', required: true },
-            { name: 'pay_period_start', label: t('Pay Period Start'), type: 'date', required: true },
-            { name: 'pay_period_end', label: t('Pay Period End'), type: 'date', required: true }
+            {
+              name: 'pay_period_start',
+              label: t('Pay Period'),
+              type: 'custom',
+              required: true,
+              render: renderPayPeriodRange
+            }
           ],
           modalSize: 'lg'
         }}
@@ -499,7 +595,7 @@ export default function PayrollRuns() {
               placeholder: t('Search and select employees'),
               options: employees.map((employee: any) => ({
                 value: String(employee.id),
-                label: employee.name
+                label: formatEmployeeOptionLabel(employee)
               })),
               dropdownHeight: '520px',
               conditional: (_mode: string, formData: any) => !formData.select_all

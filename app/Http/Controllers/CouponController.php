@@ -35,7 +35,7 @@ class CouponController extends BaseController
             $query->where('status', $request->status);
         }
 
-        $perPage = $request->get('per_page', 10);
+        $perPage = $request->get('per_page', 50);
         $coupons = $query->latest()->paginate($perPage);
 
         return Inertia::render('coupons/index', [
@@ -75,7 +75,7 @@ class CouponController extends BaseController
         ]);
         
         // Paginate the usage history
-        $perPage = $request->get('per_page', 10);
+        $perPage = $request->get('per_page', 50);
         $page = $request->get('page', 1);
         $total = $usageHistory->count();
         $items = $usageHistory->forPage($page, $perPage)->values();

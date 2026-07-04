@@ -78,10 +78,10 @@ class ComplaintController extends Controller
                 $query->orderBy('created_at', 'desc');
             }
 
-            $complaints = $query->paginate($request->per_page ?? 10);
+            $complaints = $query->paginate($request->per_page ?? 50);
 
             // Get employees for complainant dropdown
-            $complainants = User::with('employee')
+            $complainants = User::with('employee.department')
                 ->where('type', 'employee')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
@@ -95,7 +95,7 @@ class ComplaintController extends Controller
                 });
 
             // Get employees for against dropdown
-            $againstEmployees = User::emp()->with('employee')
+            $againstEmployees = User::emp()->with('employee.department')
                 ->whereIn('created_by', getCompanyAndUsersId())
                 ->where('status', 'active')
                 ->get()
@@ -146,7 +146,7 @@ class ComplaintController extends Controller
         }
 
         $employees = User::emp()
-            ->with('employee')
+            ->with('employee.department')
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->whereIn('id', $employeeQuery->pluck('user_id'))

@@ -41,7 +41,7 @@ class JobLocationController extends Controller
             }
 
             $query->orderBy('id', 'desc');
-            $jobLocations = $query->paginate($request->per_page ?? 10);
+            $jobLocations = $query->paginate($request->per_page ?? 50);
 
             return Inertia::render('hr/recruitment/job-locations/index', [
                 'jobLocations' => $jobLocations,

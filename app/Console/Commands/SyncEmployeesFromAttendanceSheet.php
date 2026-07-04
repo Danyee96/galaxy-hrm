@@ -85,7 +85,6 @@ class SyncEmployeesFromAttendanceSheet extends Command
                 $departments[$departmentName] = $department;
             }
 
-            $assignments = [];
             foreach ($sheet['valid'] as $row) {
                 $employee = Employee::where('biometric_emp_id', $row['emp_no'])->first()
                     ?: Employee::where('employee_id', $row['ac_no'])->first()
@@ -99,102 +98,11 @@ class SyncEmployeesFromAttendanceSheet extends Command
 
                     $employee = $this->createEmployee($row, $departments[$row['department']], $branch->id, $creator->id);
                     $stats['employees_created']++;
-                }
 
-                $assignments[$employee->id] = [
-                    'employee' => $employee,
-                    'row' => $row,
-                    'department' => $departments[$row['department']],
-                ];
-            }
-
-            $targetCounts = collect($assignments)->countBy(fn ($assignment) => $assignment['row']['ac_no']);
-            foreach ($targetCounts->filter(fn ($count) => $count > 1) as $employeeNo => $count) {
-                $stats['errors'][] = "Employee number {$employeeNo} maps to {$count} existing employees.";
-            }
-
-            if (! empty($stats['errors'])) {
-                $stats['skipped'] += count($assignments);
-
-                return;
-            }
-
-            foreach ($assignments as $assignment) {
-                $employee = $assignment['employee'];
-                $targetEmployeeNo = $assignment['row']['ac_no'];
-                $conflict = Employee::where('employee_id', $targetEmployeeNo)
-                    ->where('id', '<>', $employee->id)
-                    ->first();
-
-                if ($conflict && ! isset($assignments[$conflict->id])) {
-                    $stats['errors'][] = "Employee number {$targetEmployeeNo} already belongs to employee row {$conflict->id}.";
-                }
-            }
-
-            if (! empty($stats['errors'])) {
-                $stats['skipped'] += count($assignments);
-
-                return;
-            }
-
-            if (! $dryRun) {
-                foreach ($assignments as $assignment) {
-                    $employee = $assignment['employee'];
-                    if ($employee->employee_id !== $assignment['row']['ac_no']) {
-                        $employee->employee_id = 'SYNC-TMP-'.$employee->id;
-                        $employee->save();
-                    }
-                }
-            }
-
-            foreach ($assignments as $assignment) {
-                $employee = $assignment['employee'];
-                $row = $assignment['row'];
-                $department = $assignment['department'];
-
-                if (! $dryRun) {
-                    $employee->update([
-                        'employee_id' => $row['ac_no'],
-                        'biometric_emp_id' => $row['emp_no'],
-                        'branch_id' => $branch->id,
-                        'department_id' => $department?->id,
-                        'employee_status' => $employee->employee_status ?: 'active',
-                        'created_by' => $employee->created_by ?: $creator->id,
-                    ]);
-                    $employee->user?->update([
-                        'name' => $row['name'],
-                        'created_by' => $employee->user?->created_by ?: $creator->id,
-                        'status' => $employee->user?->status ?: 'active',
-                    ]);
-                }
-
-                $stats['employees_updated']++;
-            }
-
-            $validAcNos = collect($sheet['valid'])->pluck('ac_no')->all();
-            $validEmpNos = collect($sheet['valid'])->pluck('emp_no')->all();
-            foreach ($sheet['invalid'] as $row) {
-                $employee = Employee::where(function ($query) use ($row) {
-                    $query->where('employee_id', $row['ac_no'])
-                        ->orWhere('employee_id', $row['emp_no'])
-                        ->orWhere('biometric_emp_id', $row['emp_no']);
-                })
-                    ->whereNotIn('employee_id', $validAcNos)
-                    ->whereNotIn('biometric_emp_id', $validEmpNos)
-                    ->first();
-
-                if (! $employee) {
                     continue;
                 }
 
-                if (! $dryRun) {
-                    $employee->user?->delete();
-                    if ($employee->exists) {
-                        $employee->delete();
-                    }
-                }
-
-                $stats['employees_deleted']++;
+                $stats['skipped']++;
             }
         };
 

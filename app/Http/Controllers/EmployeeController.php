@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\EmployeeBonus;
 use App\Models\EmployeeDocument;
 use App\Models\User;
+use App\Services\EmployeeImportService;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -65,24 +66,24 @@ class EmployeeController extends Controller
 
             // Handle sorting
             if ($request->has('sort_field') && !empty($request->sort_field)) {
-                $sortDirection = strtolower($request->sort_direction ?? 'asc') === 'desc' ? 'desc' : 'asc';
+                $sortDirection = $this->normalizeSortDirection($request->sort_direction);
 
                 if ($request->sort_field === 'employee_id') {
                     $query->orderByRaw(
-                        "CAST((select employee_id from employees where employees.user_id = users.id limit 1) AS UNSIGNED) {$sortDirection}"
+                        $this->userEmployeeIdSortExpression()." {$sortDirection}"
                     )->orderBy('users.name');
                 } elseif ($request->sort_field === 'name') {
                     $query->orderBy('users.name', $sortDirection);
                 } else {
-                    $query->orderByRaw("CAST((select employee_id from employees where employees.user_id = users.id limit 1) AS UNSIGNED) asc")
+                    $query->orderByRaw($this->userEmployeeIdSortExpression().' asc')
                         ->orderBy('users.name');
                 }
             } else {
-                $query->orderByRaw("CAST((select employee_id from employees where employees.user_id = users.id limit 1) AS UNSIGNED) asc")
+                $query->orderByRaw($this->userEmployeeIdSortExpression().' asc')
                     ->orderBy('users.name');
             }
 
-            $employees = $query->paginate($request->per_page ?? 10);
+            $employees = $query->paginate($request->per_page ?? 50);
 
             $departments = Department::with('branch')
                 ->whereIn('created_by', getCompanyAndUsersId())
@@ -154,10 +155,10 @@ class EmployeeController extends Controller
             try {
                 $validator = Validator::make($request->all(), [
                     'employee_id' => [
-                        'required',
+                        'nullable',
                         'string',
                         'max:255',
-                        Rule::unique('employees', 'employee_id')->ignore($employee->id),
+                        Rule::unique('employees', 'employee_id'),
                     ],
                     'name' => 'required|string|max:255',
                     'department_id' => 'required|exists:departments,id',
@@ -197,7 +198,7 @@ class EmployeeController extends Controller
 
                 $employee = new Employee();
                 $employee->user_id = $user->id;
-                $employee->employee_id = Employee::generateEmployeeId();
+                $employee->employee_id = trim((string) $request->employee_id) ?: Employee::generateEmployeeId();
                 $employee->branch_id = $department->branch_id;
                 $employee->department_id = $department->id;
                 $employee->whatsapp_number = $this->normalizePakistanWhatsAppNumber($request->whatsapp_number);
@@ -247,6 +248,43 @@ class EmployeeController extends Controller
         } else {
             return redirect()->back()->with('error', __('Permission Denied.'));
         }
+    }
+
+    public function import(Request $request, EmployeeImportService $importService)
+    {
+        if (! Auth::user()->can('create-employees')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $validated = $request->validate([
+            'file' => 'required|file|max:10240|mimes:xlsx,xlsm,xltx,xltm,csv,txt',
+        ]);
+
+        try {
+            $stats = $importService->import($validated['file'], creatorId());
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        $message = __('Employee import completed. Created: :created, Departments Created: :departments, Skipped: :skipped.', [
+            'created' => $stats['created'],
+            'departments' => $stats['departments_created'],
+            'skipped' => $stats['skipped'],
+        ]);
+
+        if ($stats['duplicate_sheet_rows'] > 0 || $stats['existing_employees'] > 0 || $stats['invalid_rows'] > 0) {
+            $message .= ' '.__('Duplicate sheet rows skipped: :sheet, Existing employees skipped: :existing, Invalid rows skipped: :invalid.', [
+                'sheet' => $stats['duplicate_sheet_rows'],
+                'existing' => $stats['existing_employees'],
+                'invalid' => $stats['invalid_rows'],
+            ]);
+        }
+
+        if (! empty($stats['errors'])) {
+            $message .= ' '.__('First issues:').' '.implode(' | ', $stats['errors']);
+        }
+
+        return redirect()->back()->with($stats['created'] > 0 ? 'success' : 'error', $message);
     }
 
     /**
@@ -320,6 +358,12 @@ class EmployeeController extends Controller
 
             try {
                 $validator = Validator::make($request->all(), [
+                    'employee_id' => [
+                        'required',
+                        'string',
+                        'max:255',
+                        Rule::unique('employees', 'employee_id')->ignore($employee->id),
+                    ],
                     'name' => 'required|string|max:255',
                     'department_id' => 'required|exists:departments,id',
                     'whatsapp_number' => 'nullable|string|max:30',
@@ -379,7 +423,7 @@ class EmployeeController extends Controller
     {
         if (Auth::user()->can('delete-employees')) {
             try {
-                $user = User::with('employee')->where('id', $userId)->whereIn('created_by', getCompanyAndUsersId())->first();
+                $user = User::with('employee.department')->where('id', $userId)->whereIn('created_by', getCompanyAndUsersId())->first();
 
                 if (!$user || !$user->employee) {
                     return redirect()->back()->with('error', __('Employee not found'));
@@ -405,6 +449,61 @@ class EmployeeController extends Controller
             }
         } else {
             return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        if (! Auth::user()->can('delete-employees')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $validated = $request->validate([
+            'employee_ids' => 'required|array|min:1',
+            'employee_ids.*' => 'integer',
+        ]);
+
+        try {
+            $requestedIds = collect($validated['employee_ids'])
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->values();
+
+            $users = User::with('employee')
+                ->whereIn('id', $requestedIds)
+                ->whereIn('created_by', getCompanyAndUsersId())
+                ->where('type', 'employee')
+                ->get();
+
+            $deleted = 0;
+
+            foreach ($users as $user) {
+                if (! $user->employee) {
+                    continue;
+                }
+
+                EmployeeDocument::where('employee_id', $user->employee->id)->delete();
+                $user->employee->delete();
+
+                if ($user->avatar) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
+
+                $user->delete();
+                $deleted++;
+            }
+
+            $skipped = max(0, $requestedIds->count() - $deleted);
+            $message = __('Deleted :count employees.', ['count' => $deleted]);
+
+            if ($skipped > 0) {
+                $message .= ' '.__('Skipped :count employees that were not found or not allowed.', ['count' => $skipped]);
+            }
+
+            return redirect()->route('hr.employees.index')->with($deleted > 0 ? 'success' : 'error', $message);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', __('Failed to delete employees: :message', ['message' => $e->getMessage()]));
         }
     }
 
@@ -541,7 +640,7 @@ class EmployeeController extends Controller
      */
     public function deleteDocument($userId, $documentId)
     {
-        $user = User::with('employee')->find($userId);
+        $user = User::with('employee.department')->find($userId);
 
         if (!$user || !$user->employee) {
             return redirect()->back()->with('error', __('Employee not found'));
@@ -573,7 +672,7 @@ class EmployeeController extends Controller
      */
     public function approveDocument($userId, $documentId)
     {
-        $user = User::with('employee')->find($userId);
+        $user = User::with('employee.department')->find($userId);
         if (!$user || !$user->employee) {
             return redirect()->back()->with('error', __('Employee not found'));
         }
@@ -599,7 +698,7 @@ class EmployeeController extends Controller
      */
     public function rejectDocument($userId, $documentId)
     {
-        $user = User::with('employee')->find($userId);
+        $user = User::with('employee.department')->find($userId);
         if (!$user || !$user->employee) {
             return redirect()->back()->with('error', __('Employee not found'));
         }
@@ -626,7 +725,7 @@ class EmployeeController extends Controller
     public function downloadDocument($userId, $documentId)
     {
 
-        $user = User::with('employee')->find($userId);
+        $user = User::with('employee.department')->find($userId);
         if (!$user || !$user->employee) {
             return redirect()->back()->with('error', __('Employee not found'));
         }
