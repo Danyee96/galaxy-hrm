@@ -37,25 +37,29 @@ class AdvanceSalaryReceiptController extends Controller
             ]);
         }
 
-        $image = imagecreatetruecolor(1000, 500);
+        $width = 1200;
+        $height = 630;
+        $scale = 2;
+        $image = imagecreatetruecolor($width * $scale, $height * $scale);
 
         $white = imagecolorallocate($image, 255, 255, 255);
         $black = imagecolorallocate($image, 17, 24, 39);
         $red = imagecolorallocate($image, 220, 38, 38);
 
-        imagefilledrectangle($image, 0, 0, 1000, 500, $white);
+        imageantialias($image, true);
+        imagefilledrectangle($image, 0, 0, $width * $scale, $height * $scale, $white);
 
-        $this->centerText($image, "Name: {$receipt['employee_name']}", 70, 56, $black, true, 920);
-        $this->centerText($image, "Dept: {$receipt['department_name']}", 125, 50, $black, true, 920);
-        $this->centerText($image, 'Advance taken', 190, 62, $black, true);
-        $this->centerText($image, 'Rs '.$receipt['amount'], 260, 76, $red, true);
-        $this->centerText($image, $receipt['date'], 315, 40, $black, true);
+        $this->centerText($image, "Name: {$receipt['employee_name']}", 88 * $scale, 54 * $scale, $black, true, 1080 * $scale);
+        $this->centerText($image, "Dept: {$receipt['department_name']}", 150 * $scale, 46 * $scale, $black, true, 1080 * $scale);
+        $this->centerText($image, 'Advance taken', 235 * $scale, 64 * $scale, $black, true);
+        $this->centerText($image, 'Rs '.$receipt['amount'], 325 * $scale, 86 * $scale, $red, true);
+        $this->centerText($image, $receipt['date'], 390 * $scale, 42 * $scale, $black);
 
-        imagesetthickness($image, 5);
-        imageline($image, 190, 365, 810, 365, $black);
+        imagesetthickness($image, 4 * $scale);
+        imageline($image, 210 * $scale, 455 * $scale, 990 * $scale, 455 * $scale, $black);
 
-        $this->centerText($image, 'Total Advance taken this month:', 415, 44, $black, true, 920);
-        $this->centerText($image, 'Rs '.$receipt['month_total'], 460, 58, $red, true);
+        $this->centerText($image, 'Total Advance taken this month:', 515 * $scale, 44 * $scale, $black, true, 1080 * $scale);
+        $this->centerText($image, 'Rs '.$receipt['month_total'], 580 * $scale, 66 * $scale, $red, true);
 
         ob_start();
         imagepng($image);
@@ -125,7 +129,9 @@ class AdvanceSalaryReceiptController extends Controller
 
             $box = imagettfbbox($size, 0, $font, $text);
             $width = $box[2] - $box[0];
-            imagettftext($image, $size, 0, (int) ((1000 - $width) / 2), $y, $color, $font, $text);
+            $x = (int) ((imagesx($image) - $width) / 2 - $box[0]);
+            $baselineY = (int) ($y - (($box[7] + $box[1]) / 2));
+            imagettftext($image, $size, 0, $x, $baselineY, $color, $font, $text);
             return;
         }
 
@@ -158,7 +164,7 @@ class AdvanceSalaryReceiptController extends Controller
         imagecopyresampled(
             $image,
             $source,
-            (int) ((1000 - $targetWidth) / 2),
+            (int) ((imagesx($image) - $targetWidth) / 2),
             (int) ($y - ($targetHeight / 2)),
             0,
             0,
@@ -180,16 +186,16 @@ class AdvanceSalaryReceiptController extends Controller
         $monthTotal = htmlspecialchars($receipt['month_total'], ENT_QUOTES, 'UTF-8');
 
         return <<<SVG
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="500" viewBox="0 0 1000 500">
-  <rect width="1000" height="500" fill="#ffffff"/>
-  <text x="500" y="70" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="56" font-weight="700" fill="#111827">Name: {$employeeName}</text>
-  <text x="500" y="125" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="50" font-weight="700" fill="#111827">Dept: {$departmentName}</text>
-  <text x="500" y="190" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="62" font-weight="700" fill="#111827">Advance taken</text>
-  <text x="500" y="260" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="76" font-weight="700" fill="#dc2626">Rs {$amount}</text>
-  <text x="500" y="315" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="#111827">{$date}</text>
-  <line x1="190" y1="365" x2="810" y2="365" stroke="#111827" stroke-width="5"/>
-  <text x="500" y="415" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#111827">Total Advance taken this month:</text>
-  <text x="500" y="460" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="58" font-weight="700" fill="#dc2626">Rs {$monthTotal}</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <text x="600" y="88" text-anchor="middle" dominant-baseline="middle" font-family="Poppins, Arial, Helvetica, sans-serif" font-size="54" font-weight="700" fill="#111827">Name: {$employeeName}</text>
+  <text x="600" y="150" text-anchor="middle" dominant-baseline="middle" font-family="Poppins, Arial, Helvetica, sans-serif" font-size="46" font-weight="700" fill="#111827">Dept: {$departmentName}</text>
+  <text x="600" y="235" text-anchor="middle" dominant-baseline="middle" font-family="Poppins, Arial, Helvetica, sans-serif" font-size="64" font-weight="700" fill="#111827">Advance taken</text>
+  <text x="600" y="325" text-anchor="middle" dominant-baseline="middle" font-family="Poppins, Arial, Helvetica, sans-serif" font-size="86" font-weight="800" fill="#dc2626">Rs {$amount}</text>
+  <text x="600" y="390" text-anchor="middle" dominant-baseline="middle" font-family="Poppins, Arial, Helvetica, sans-serif" font-size="42" font-weight="600" fill="#111827">{$date}</text>
+  <line x1="210" y1="455" x2="990" y2="455" stroke="#111827" stroke-width="4"/>
+  <text x="600" y="515" text-anchor="middle" dominant-baseline="middle" font-family="Poppins, Arial, Helvetica, sans-serif" font-size="44" font-weight="700" fill="#111827">Total Advance taken this month:</text>
+  <text x="600" y="580" text-anchor="middle" dominant-baseline="middle" font-family="Poppins, Arial, Helvetica, sans-serif" font-size="66" font-weight="800" fill="#dc2626">Rs {$monthTotal}</text>
 </svg>
 SVG;
     }
@@ -198,12 +204,21 @@ SVG;
     {
         $paths = $bold
             ? [
+                resource_path('fonts/Poppins-Bold.ttf'),
+                resource_path('fonts/Arial-Bold.ttf'),
                 '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+                '/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf',
+                '/usr/share/fonts/truetype/msttcorefonts/Arial Bold.ttf',
                 '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
                 '/Library/Fonts/Arial Bold.ttf',
             ]
             : [
+                resource_path('fonts/Poppins-Regular.ttf'),
+                resource_path('fonts/Arial.ttf'),
                 '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+                '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf',
                 '/System/Library/Fonts/Supplemental/Arial.ttf',
                 '/Library/Fonts/Arial.ttf',
             ];

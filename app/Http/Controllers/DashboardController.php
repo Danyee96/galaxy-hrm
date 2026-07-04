@@ -22,6 +22,7 @@ use App\Models\PlanRequest;
 use App\Models\PayrollRun;
 use App\Services\WorkingScheduleService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 
 class DashboardController extends Controller
@@ -91,8 +92,12 @@ class DashboardController extends Controller
         // Get system-wide statistics
         $totalCompanies = User::where('type', 'company')->count();
         $totalUsers = User::where('type', '!=', 'superadmin')->where('type', '!=', 'super admin')->count();
-        $totalRevenue = PlanOrder::where('status', 'approved')->sum('final_price') ?? 0;
-        $activePlans = Plan::where('is_plan_enable', 'on')->count();
+        $totalRevenue = Schema::hasTable('plan_orders') && Schema::hasColumn('plan_orders', 'final_price')
+            ? (float) PlanOrder::where('status', 'approved')->sum('final_price')
+            : 0;
+        $activePlans = Schema::hasColumn('plans', 'is_plan_enable')
+            ? Plan::where('is_plan_enable', 'on')->count()
+            : Plan::count();
 
         $pendingRequests = PlanRequest::where('status', 'pending')->count();
 
@@ -131,8 +136,9 @@ class DashboardController extends Controller
                         'status' => 'active'
                     ];
                 }),
-            'topPlans' => Plan::withCount('users')
-                ->orderBy('users_count', 'desc')
+            'topPlans' => Plan::query()
+                ->withCount('users')
+                ->orderByDesc('users_count')
                 ->take(5)
                 ->get()
                 ->map(function ($plan) {

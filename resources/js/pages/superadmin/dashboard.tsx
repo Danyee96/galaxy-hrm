@@ -64,12 +64,14 @@ export default function SuperAdminDashboard({ dashboardData }: { dashboardData: 
 
   const stats = dashboardData?.stats || {
     totalCompanies: 156,
+    totalUsers: 0,
     totalNfcCards: 89,
     totalRevenue: 45678,
     activePlans: 89,
     pendingRequests: 12,
     monthlyGrowth: 15.2
   };
+  const formatCurrency = window.appSettings?.formatCurrency || ((value: number | string) => `${value}`);
 
   const recentActivity = dashboardData?.recentActivity || [];
 
@@ -149,7 +151,7 @@ export default function SuperAdminDashboard({ dashboardData }: { dashboardData: 
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('Total Revenue')}</p>
-                  <h3 className="mt-2 text-2xl font-bold">{window.appSettings.formatCurrency(stats.totalRevenue.toLocaleString())}</h3>
+                  <h3 className="mt-2 text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</h3>
                 </div>
                 <div className="rounded-full bg-yellow-100 p-3 dark:bg-yellow-900">
                   <DollarSign className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />

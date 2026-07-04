@@ -102,52 +102,60 @@ export default function AdvanceSalaries() {
   };
 
   const generateAdvanceReceiptImage = async (employee: any, advance: any): Promise<File | null> => {
+    const width = 1200;
+    const height = 630;
+    const scale = 2;
     const canvas = document.createElement('canvas');
-    canvas.width = 1000;
-    canvas.height = 500;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       return null;
     }
 
-    const centerX = canvas.width / 2;
+    ctx.scale(scale, scale);
+
+    const centerX = width / 2;
+    const fontFamily = 'Poppins, Arial, Helvetica, sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, width, height);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     ctx.fillStyle = '#111827';
-    ctx.font = '700 56px Arial, sans-serif';
-    ctx.fillText(`Name: ${employee.name || '-'}`, centerX, 70, 920);
+    ctx.font = `700 54px ${fontFamily}`;
+    ctx.fillText(`Name: ${employee.name || '-'}`, centerX, 88, 1080);
 
-    ctx.font = '700 50px Arial, sans-serif';
-    ctx.fillText(`Dept: ${employee.department_name || '-'}`, centerX, 125, 920);
+    ctx.font = `700 46px ${fontFamily}`;
+    ctx.fillText(`Dept: ${employee.department_name || '-'}`, centerX, 150, 1080);
 
-    ctx.font = '700 62px Arial, sans-serif';
-    ctx.fillText('Advance taken', centerX, 190);
+    ctx.font = `700 64px ${fontFamily}`;
+    ctx.fillText('Advance taken', centerX, 235);
 
     ctx.fillStyle = '#dc2626';
-    ctx.font = '700 76px Arial, sans-serif';
-    ctx.fillText(`Rs ${formatReceiptMoney(advance.amount)}`, centerX, 260);
+    ctx.font = `800 86px ${fontFamily}`;
+    ctx.fillText(`Rs ${formatReceiptMoney(advance.amount)}`, centerX, 325);
 
     ctx.fillStyle = '#111827';
-    ctx.font = '700 40px Arial, sans-serif';
-    ctx.fillText(formatReceiptDate(advance.request_date), centerX, 315);
+    ctx.font = `600 42px ${fontFamily}`;
+    ctx.fillText(formatReceiptDate(advance.request_date), centerX, 390);
 
     ctx.strokeStyle = '#111827';
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(190, 365);
-    ctx.lineTo(810, 365);
+    ctx.moveTo(210, 455);
+    ctx.lineTo(990, 455);
     ctx.stroke();
 
-    ctx.font = '700 44px Arial, sans-serif';
-    ctx.fillText('Total Advance taken this month:', centerX, 415, 920);
+    ctx.font = `700 44px ${fontFamily}`;
+    ctx.fillText('Total Advance taken this month:', centerX, 515, 1080);
 
     ctx.fillStyle = '#dc2626';
-    ctx.font = '700 58px Arial, sans-serif';
-    ctx.fillText(`Rs ${formatReceiptMoney(employee.advance_total)}`, centerX, 460);
+    ctx.font = `800 66px ${fontFamily}`;
+    ctx.fillText(`Rs ${formatReceiptMoney(employee.advance_total)}`, centerX, 580);
 
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1));
     if (!blob) {

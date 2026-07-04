@@ -14,8 +14,8 @@
     <meta property="og:image" content="{{ $absoluteImageUrl }}">
     <meta property="og:image:secure_url" content="{{ $absoluteImageUrl }}">
     <meta property="og:image:type" content="image/png">
-    <meta property="og:image:width" content="1000">
-    <meta property="og:image:height" content="500">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Salary advance receipt for {{ $receipt['employee_name'] }}">
     <meta itemprop="image" content="{{ $absoluteImageUrl }}">
 
