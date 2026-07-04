@@ -136,10 +136,6 @@ class User extends BaseAuthenticatable implements MustVerifyEmail
      */
     public function plan()
     {
-        if (! isSaas()) {
-            return null; // No plans in non-SaaS
-        }
-
         return $this->belongsTo(Plan::class);
     }
 
