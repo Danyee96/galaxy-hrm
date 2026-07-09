@@ -56,7 +56,15 @@ php artisan route:cache
 php artisan view:cache
 ```
 
-5. Set production `.env` values:
+5. Add Hostinger's Laravel scheduler cron. In hPanel, open **Websites > Advanced > Cron Jobs** and create a custom cron that runs every minute:
+
+```bash
+cd /home/YOUR_HOSTINGER_USER/path-to-laravel-app && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+```
+
+Replace `/home/YOUR_HOSTINGER_USER/path-to-laravel-app` with the directory that contains this project's `artisan` file. This cron is required for automatic system backups; the app schedules `system-backups:auto` twice daily at 00:00 and 12:00 in the configured backup timezone.
+
+6. Set production `.env` values:
 
 ```text
 APP_ENV=production
