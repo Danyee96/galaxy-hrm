@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\EmployeeBonus;
 use App\Models\EmployeeDocument;
 use App\Models\User;
+use App\Services\EmployeeIdService;
 use App\Services\EmployeeImportService;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
@@ -153,8 +154,9 @@ class EmployeeController extends Controller
     {
         if (Auth::user()->can('create-employees')) {
             try {
+                $rawEmployeeId = trim((string) $request->employee_id);
                 $request->merge([
-                    'employee_id' => trim((string) $request->employee_id),
+                    'employee_id' => EmployeeIdService::normalize($rawEmployeeId, creatorId()),
                 ]);
 
                 $validator = Validator::make($request->all(), [
@@ -175,6 +177,12 @@ class EmployeeController extends Controller
 
                 if ($validator->fails()) {
                     return redirect()->back()->withErrors($validator)->withInput();
+                }
+
+                if ($rawEmployeeId !== '' && $rawEmployeeId !== $request->employee_id && Employee::where('created_by', creatorId())->where('employee_id', $rawEmployeeId)->exists()) {
+                    return redirect()->back()->withErrors([
+                        'employee_id' => __('Employee ID already exists.'),
+                    ])->withInput();
                 }
 
                 $department = Department::whereIn('created_by', getCompanyAndUsersId())->findOrFail($request->department_id);
@@ -204,7 +212,7 @@ class EmployeeController extends Controller
 
                 $employee = new Employee();
                 $employee->user_id = $user->id;
-                $employee->employee_id = trim((string) $request->employee_id) ?: Employee::generateEmployeeId();
+                $employee->employee_id = trim((string) $request->employee_id) ?: Employee::generateEmployeeId(creatorId());
                 $employee->branch_id = $department->branch_id;
                 $employee->department_id = $department->id;
                 $employee->whatsapp_number = $this->normalizePakistanWhatsAppNumber($request->whatsapp_number);
@@ -262,7 +270,8 @@ class EmployeeController extends Controller
             abort(403);
         }
 
-        $employeeId = trim((string) $request->query('employee_id', ''));
+        $rawEmployeeId = trim((string) $request->query('employee_id', ''));
+        $employeeId = EmployeeIdService::normalize($rawEmployeeId, creatorId());
         $ignoreId = $request->query('ignore_id');
 
         if ($employeeId === '') {
@@ -272,7 +281,16 @@ class EmployeeController extends Controller
             ]);
         }
 
-        $exists = Employee::where('employee_id', $employeeId)
+        $exists = Employee::where(function ($query) use ($employeeId, $rawEmployeeId) {
+                $query->where('employee_id', $employeeId);
+
+                if ($rawEmployeeId !== $employeeId) {
+                    $query->orWhere(function ($rawQuery) use ($rawEmployeeId) {
+                        $rawQuery->where('created_by', creatorId())
+                            ->where('employee_id', $rawEmployeeId);
+                    });
+                }
+            })
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
             ->exists();
 
@@ -389,6 +407,10 @@ class EmployeeController extends Controller
             }
 
             try {
+                $request->merge([
+                    'employee_id' => EmployeeIdService::normalize($request->employee_id, $employee->created_by),
+                ]);
+
                 $validator = Validator::make($request->all(), [
                     'employee_id' => [
                         'required',

@@ -306,7 +306,7 @@ class CandidateController extends Controller
                     'documentTypes' => $documentTypes,
                     'shifts' => $shifts,
                     'attendancePolicies' => $attendancePolicies,
-                    'generatedEmployeeId' => Employee::generateEmployeeId(),
+                    'generatedEmployeeId' => Employee::generateEmployeeId(creatorId()),
                 ]);
             } else {
                 return redirect()->back()->with('error', __('Permission Denied.'));
@@ -388,7 +388,7 @@ class CandidateController extends Controller
             // Create Employee
             $employee = \App\Models\Employee::create([
                 'user_id' => $user->id,
-                'employee_id' => \App\Models\Employee::generateEmployeeId(),
+                'employee_id' => \App\Models\Employee::generateEmployeeId(creatorId()),
                 'biometric_emp_id' => $request->biometric_emp_id,
                 'phone' => $request->phone,
                 'date_of_birth' => $request->date_of_birth,

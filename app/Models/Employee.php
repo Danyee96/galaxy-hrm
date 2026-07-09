@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\EmployeeIdService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -114,16 +115,8 @@ class Employee extends Model
     /**
      * Generate unique employee ID
      */
-    public static function generateEmployeeId()
+    public static function generateEmployeeId($creator = null)
     {
-        $lastEmployee = self::orderBy('id', 'desc')->first();
-        $nextId = $lastEmployee ? $lastEmployee->id + 1 : 1;
-
-        do {
-            $employeeId = 'EMP' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
-            $nextId++;
-        } while (self::where('employee_id', $employeeId)->exists());
-
-        return $employeeId;
+        return EmployeeIdService::generate($creator ?? (function_exists('creatorId') ? creatorId() : null));
     }
 }

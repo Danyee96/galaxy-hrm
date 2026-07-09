@@ -132,7 +132,7 @@ class BiometricAttendanceImportService
 
         return Employee::create([
             'user_id' => $user->id,
-            'employee_id' => Employee::generateEmployeeId(),
+            'employee_id' => Employee::generateEmployeeId($creatorId),
             'biometric_emp_id' => $employeeNo,
             'employee_status' => 'active',
             'created_by' => $creatorId,

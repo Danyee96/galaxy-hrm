@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\EmployeeIdService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -115,8 +116,13 @@ class ImportLegacyAttendanceXls extends Command
                         $stats['departments_created']++;
                     }
 
-                    $employee = Employee::where('employee_id', $employeeNo)
-                        ->orWhere('biometric_emp_id', $employeeNo)
+                    $employeeId = EmployeeIdService::normalize($employeeNo, $creator);
+                    $employee = Employee::where('created_by', $creator->id)
+                        ->where(function ($query) use ($employeeNo, $employeeId) {
+                            $query->where('employee_id', $employeeId)
+                                ->orWhere('employee_id', $employeeNo)
+                                ->orWhere('biometric_emp_id', $employeeNo);
+                        })
                         ->first();
 
                     if (! $employee) {
@@ -291,7 +297,7 @@ class ImportLegacyAttendanceXls extends Command
 
         return Employee::create([
             'user_id' => $user->id,
-            'employee_id' => $employeeNo,
+            'employee_id' => EmployeeIdService::normalize($employeeNo, $creatorId),
             'biometric_emp_id' => $employeeNo,
             'branch_id' => $branchId,
             'department_id' => $departmentId,

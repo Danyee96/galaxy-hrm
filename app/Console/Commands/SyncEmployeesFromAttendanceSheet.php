@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\EmployeeIdService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -86,9 +87,15 @@ class SyncEmployeesFromAttendanceSheet extends Command
             }
 
             foreach ($sheet['valid'] as $row) {
-                $employee = Employee::where('biometric_emp_id', $row['emp_no'])->first()
-                    ?: Employee::where('employee_id', $row['ac_no'])->first()
-                    ?: Employee::where('employee_id', $row['emp_no'])->first();
+                $employeeId = EmployeeIdService::normalize($row['ac_no'], $creator);
+                $empNoEmployeeId = EmployeeIdService::normalize($row['emp_no'], $creator);
+                $employee = Employee::where('created_by', $creator->id)
+                    ->where(function ($query) use ($row, $employeeId, $empNoEmployeeId) {
+                        $query->where('biometric_emp_id', $row['emp_no'])
+                            ->orWhere('employee_id', $employeeId)
+                            ->orWhere('employee_id', $empNoEmployeeId);
+                    })
+                    ->first();
 
                 if (! $employee) {
                     if ($dryRun) {
@@ -216,7 +223,7 @@ class SyncEmployeesFromAttendanceSheet extends Command
 
         return Employee::create([
             'user_id' => $user->id,
-            'employee_id' => $row['ac_no'],
+            'employee_id' => EmployeeIdService::normalize($row['ac_no'], $creatorId),
             'biometric_emp_id' => $row['emp_no'],
             'branch_id' => $branchId,
             'department_id' => $department?->id,

@@ -76,6 +76,9 @@ class EmployeeImportService
                         continue;
                     }
 
+                    $rawEmployeeId = $employeeId;
+                    $employeeId = EmployeeIdService::normalize($employeeId, $creator);
+
                     if (isset($seenEmployeeIds[$employeeId])) {
                         $stats['skipped']++;
                         $stats['duplicate_sheet_rows']++;
@@ -87,7 +90,9 @@ class EmployeeImportService
                     }
                     $seenEmployeeIds[$employeeId] = true;
 
-                    if (Employee::where('employee_id', $employeeId)->exists()) {
+                    if (Employee::where('created_by', $creator->id)
+                        ->where(fn ($query) => $query->where('employee_id', $employeeId)->orWhere('employee_id', $rawEmployeeId))
+                        ->exists()) {
                         $stats['skipped']++;
                         $stats['existing_employees']++;
                         $stats['errors'][] = __('Row :row skipped: employee ID :id already exists.', [

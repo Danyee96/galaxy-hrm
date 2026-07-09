@@ -46,7 +46,8 @@ class LegacyAttendanceSheetImportService
                 ? Employee::with('user:id,name')
                     ->whereIn('created_by', getCompanyAndUsersId())
                     ->where(function ($query) use ($employeeNo) {
-                        $query->where('employee_id', $employeeNo)
+                        $query->where('employee_id', EmployeeIdService::normalize($employeeNo, creatorId()))
+                            ->orWhere('employee_id', $employeeNo)
                             ->orWhere('biometric_emp_id', $employeeNo);
                     })
                     ->first()
@@ -153,8 +154,13 @@ class LegacyAttendanceSheetImportService
                             $stats['departments_created']++;
                         }
 
-                        $employee = Employee::where('employee_id', $employeeNo)
-                            ->orWhere('biometric_emp_id', $employeeNo)
+                        $employeeId = EmployeeIdService::normalize($employeeNo, $creator);
+                        $employee = Employee::where('created_by', $creator->id)
+                            ->where(function ($query) use ($employeeNo, $employeeId) {
+                                $query->where('employee_id', $employeeId)
+                                    ->orWhere('employee_id', $employeeNo)
+                                    ->orWhere('biometric_emp_id', $employeeNo);
+                            })
                             ->first();
 
                         if (! $employee) {
@@ -355,7 +361,7 @@ class LegacyAttendanceSheetImportService
 
         return Employee::create([
             'user_id' => $user->id,
-            'employee_id' => $employeeNo,
+            'employee_id' => EmployeeIdService::normalize($employeeNo, $creatorId),
             'biometric_emp_id' => $employeeNo,
             'branch_id' => $branchId,
             'department_id' => $departmentId,
