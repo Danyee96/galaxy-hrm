@@ -130,7 +130,7 @@
                     <td><strong>Employee Name:</strong></td>
                     <td>{{ $payrollEntry->employee->name }}</td>
                     <td><strong>Employee ID:</strong></td>
-                    <td>{{ preg_replace('/\D+/', '', (string) ($payrollEntry->employee->employee->employee_id ?? $employeeData->employee_id ?? $payrollEntry->employee->id)) }}</td>
+                    <td>{{ $payrollEntry->employee->employee->employee_id_display ?? $payrollEntry->employee->employee->employee_id ?? $employeeData->employee_id ?? $payrollEntry->employee->id }}</td>
                 </tr>
                 <tr>
                     <td><strong>Email:</strong></td>

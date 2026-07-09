@@ -68,7 +68,7 @@ class PayrollRunController extends Controller
                 ->map(fn (User $employee) => [
                     'id' => $employee->id,
                     'name' => $employee->name,
-                    'employee_id' => $employee->employee?->employee_id,
+                    'employee_id' => $employee->employee?->employee_id_display,
                     'department_name' => $employee->employee?->department?->name,
                 ]);
 
@@ -151,7 +151,7 @@ class PayrollRunController extends Controller
                         'deductions_breakdown',
                     ])->with([
                         'employee:id,name',
-                        'employee.employee:id,user_id,employee_id,department_id',
+                        'employee.employee:id,user_id,employee_id,created_by,department_id',
                         'employee.employee.department:id,name',
                     ])
                         ->orderByRaw($this->userEmployeeIdSortExpression('payroll_entries.employee_id').' asc')
@@ -187,7 +187,7 @@ class PayrollRunController extends Controller
                     'deductions_breakdown',
                 ])->with([
                     'employee:id,name',
-                    'employee.employee:id,user_id,employee_id,department_id',
+                    'employee.employee:id,user_id,employee_id,created_by,department_id',
                     'employee.employee.department:id,name',
                 ])
                     ->orderByRaw($this->userEmployeeIdSortExpression('payroll_entries.employee_id').' asc')

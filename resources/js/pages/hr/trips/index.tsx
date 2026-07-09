@@ -9,7 +9,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeCode } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus, FileText } from 'lucide-react';
@@ -313,7 +313,7 @@ export default function Trips() {
       render: (_, row) => (
         <div>
           <div className="font-medium">{row.employee?.name || '-'}</div>
-          <div className="text-xs text-gray-500">{row.employee?.employee_id || ''}</div>
+          <div className="text-xs text-gray-500">{getEmployeeCode(row.employee)}</div>
         </div>
       )
     },

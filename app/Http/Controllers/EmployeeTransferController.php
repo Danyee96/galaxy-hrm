@@ -106,7 +106,7 @@ class EmployeeTransferController extends Controller
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
-                        'employee_id' => $user->employee->employee_id ?? '',
+                        'employee_id' => $user->employee->employee_id_display ?? '',
                         'type' => $user->type,
                     ];
                 });
@@ -162,7 +162,7 @@ class EmployeeTransferController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'employee_id' => $user->employee->employee_id ?? ''
+                    'employee_id' => $user->employee->employee_id_display ?? ''
                 ];
             });
         return $employees;

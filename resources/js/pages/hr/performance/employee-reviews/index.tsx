@@ -8,7 +8,7 @@ import { CrudTable } from '@/components/CrudTable';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeCode } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus, ClipboardList } from 'lucide-react';
@@ -213,8 +213,14 @@ export default function EmployeeReviews() {
       label: t('Employee'),
       render: (value: string, row: any) => {
         const firstName = row.employee?.name || '';
-        const employeeId = row.employee?.employee?.employee_id || '';
-        return `${firstName} `;
+        const employeeId = getEmployeeCode(row.employee);
+
+        return (
+          <div>
+            <div className="font-medium">{firstName || '-'}</div>
+            <div className="text-xs text-gray-500">{employeeId}</div>
+          </div>
+        );
       }
     },
     { 
@@ -222,8 +228,14 @@ export default function EmployeeReviews() {
       label: t('Reviewer'),
       render: (value: string, row: any) => {
         const firstName = row.reviewer?.name || '';
-        const employeeId = row.reviewer?.employee?.employee_id || '';
-        return `${firstName}`;
+        const employeeId = getEmployeeCode(row.reviewer);
+
+        return (
+          <div>
+            <div className="font-medium">{firstName || '-'}</div>
+            <div className="text-xs text-gray-500">{employeeId}</div>
+          </div>
+        );
       }
     },
     { 

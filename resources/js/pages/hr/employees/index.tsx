@@ -235,12 +235,7 @@ export default function Employees() {
     })),
   ];
 
-  const formatEmployeeNumber = (value: any) => {
-    const raw = value == null || value === '' ? '' : String(value);
-    if (!raw) return '-';
-    const match = raw.match(/\d+/);
-    return match ? String(Number(match[0])) : raw;
-  };
+  const employeeNumber = (employee: any) => employee?.employee_id_display || employee?.employee_id || '-';
 
   const formatAmount = (value: any) => {
     if (value == null || value === '') return '-';
@@ -285,7 +280,7 @@ export default function Employees() {
       key: 'employee_id',
       label: t('Employee ID'),
       sortable: true,
-      render: (_value: any, row: any) => formatEmployeeNumber(row.employee?.employee_id),
+      render: (_value: any, row: any) => employeeNumber(row.employee),
     },
     {
       key: 'name',

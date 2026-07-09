@@ -83,7 +83,7 @@ class TrainingSessionController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'employee_id' => isset($user->employee) ?  $user->employee->employee_id  : '-'
+                    'employee_id' => isset($user->employee) ?  $user->employee->employee_id_display  : '-'
                 ];
             });
 
@@ -248,7 +248,7 @@ class TrainingSessionController extends Controller
             return [
                 'employee_id' => $attendance->employee_id,
                 'name' => $attendance->employee->name,
-                'employee_id_display' => $attendance->employee->employee->employee_id ?? '-',
+                'employee_id_display' => $attendance->employee->employee->employee_id_display ?? '-',
                 'is_present' => $attendance->is_present,
                 'notes' => $attendance->notes,
             ];

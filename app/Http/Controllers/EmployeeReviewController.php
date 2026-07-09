@@ -122,7 +122,7 @@ class EmployeeReviewController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'employee_id' => $user->employee->employee_id ?? '',
+                    'employee_id' => $user->employee->employee_id_display ?? '',
                     'department_name' => $user->employee?->department?->name ?? '',
                     'type' => $user->type,
                 ];

@@ -14,11 +14,13 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getEmployeeCode } from '@/utils/helpers';
 
 export default function EmployeeTrainingShow() {
   const { t } = useTranslation();
   const { auth, employeeTraining, availableAssessments } = usePage().props as any;
   const permissions = auth?.permissions || [];
+  const employeeCode = getEmployeeCode(employeeTraining.employee) || '-';
   
   // State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -226,7 +228,7 @@ export default function EmployeeTrainingShow() {
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">{t('Employee')}</h3>
                   <p className="font-medium">{employeeTraining.employee?.name || '-'}</p>
-                  <p className="text-sm text-gray-500">{employeeTraining.employee?.employee?.employee_id || '-'}</p>
+                  <p className="text-sm text-gray-500">{employeeCode}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">{t('Assigned By')}</h3>
@@ -458,7 +460,7 @@ export default function EmployeeTrainingShow() {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">{t('Employee ID')}</h3>
-                  <p>{employeeTraining.employee?.employee?.employee_id || '-'}</p>
+                  <p>{employeeCode}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">{t('Department')}</h3>

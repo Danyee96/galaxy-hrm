@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
+import { getEmployeeCode } from '@/utils/helpers';
 
 export default function TrainingAssessmentShow() {
   const { t } = useTranslation();
@@ -213,7 +214,7 @@ export default function TrainingAssessmentShow() {
                       <TableRow key={result.id}>
                         <TableCell>
                           <div className="font-medium">{result.employee_training?.employee?.name || '-'}</div>
-                          <div className="text-xs text-gray-500">{result.employee_training?.employee?.employee_id || '-'}</div>
+                          <div className="text-xs text-gray-500">{getEmployeeCode(result.employee_training?.employee) || '-'}</div>
                         </TableCell>
                         <TableCell>
                           {format(new Date(result.assessment_date), 'MMM dd, yyyy')}

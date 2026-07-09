@@ -291,6 +291,8 @@ const getEmployeeDepartmentName = (employee: any): string => {
 const getEmployeeCode = (employee: any): string => {
   return String(
     employee?.employee_code
+    || employee?.employee_id_display
+    || employee?.employee?.employee_id_display
     || employee?.employee_id
     || employee?.employee?.employee_id
     || ''

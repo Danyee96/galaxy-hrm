@@ -90,7 +90,7 @@ class ComplaintController extends Controller
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
-                        'employee_id' => $user->employee->employee_id ?? $user->id
+                        'employee_id' => $user->employee->employee_id_display ?? $user->id
                     ];
                 });
 
@@ -103,7 +103,7 @@ class ComplaintController extends Controller
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
-                        'employee_id' => $user->employee->employee_id ?? $user->id,
+                        'employee_id' => $user->employee->employee_id_display ?? $user->id,
                         'type' => $user->type,
                     ];
                 });
@@ -156,7 +156,7 @@ class ComplaintController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'employee_id' => $user->employee->employee_id ?? '',
+                    'employee_id' => $user->employee->employee_id_display ?? '',
                     'type' => $user->type,
                 ];
             });

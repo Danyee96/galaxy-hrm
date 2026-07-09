@@ -72,7 +72,7 @@ class LeaveBalanceController extends Controller
                 ->map(fn (User $employee) => [
                     'id' => $employee->id,
                     'name' => $employee->name,
-                    'employee_id' => $employee->employee?->employee_id,
+                    'employee_id' => $employee->employee?->employee_id_display,
                     'department_name' => $employee->employee?->department?->name,
                 ]);
 
@@ -122,7 +122,7 @@ class LeaveBalanceController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'employee_id' => $user->employee->employee_id ?? '',
+                    'employee_id' => $user->employee->employee_id_display ?? '',
                 ];
             });
         return $employees;

@@ -6,6 +6,7 @@ import { ArrowLeft, Download, Printer, Users, DollarSign } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getEmployeeCode } from '@/utils/helpers';
 
 export default function PayrollRunShow() {
   const { t } = useTranslation();
@@ -21,12 +22,7 @@ export default function PayrollRunShow() {
     return amount > 0 ? `-${amount.toLocaleString('en-US')}` : '0';
   };
 
-  const formatEmployeeNumber = (value: any) => {
-    const raw = value == null || value === '' ? '' : String(value);
-    if (!raw) return '-';
-    const match = raw.match(/\d+/);
-    return match ? String(Number(match[0])) : raw;
-  };
+  const formatEmployeeNumber = (employee: any) => getEmployeeCode(employee) || '-';
 
   const formatMinutes = (minutes: number | string | null | undefined) => {
     const total = Number(minutes || 0);
@@ -512,7 +508,7 @@ export default function PayrollRunShow() {
         <CardContent>
           <div className="payroll-slip-grid">
             {payrollEntries.map((entry: any, index: number) => {
-              const employeeNumber = formatEmployeeNumber(entry.employee?.employee?.employee_id || entry.employee?.employee_id || entry.employee?.id);
+              const employeeNumber = formatEmployeeNumber(entry.employee);
               const lateMinutes = getDisplayedLateMinutes(entry);
               const latePenalty = getDisplayedLatePenalty(entry);
               const absentDays = entry.unpaid_leave_days || entry.absent_days || 0;

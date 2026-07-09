@@ -24,7 +24,7 @@ class PayrollFineController extends Controller
                     ->whereBetween('fine_date', [$monthStart->toDateString(), $monthEnd->toDateString()]);
             })
             ->with([
-                'employee:id,user_id,employee_id,base_salary',
+                'employee:id,user_id,employee_id,created_by,base_salary',
                 'payrollFines' => function ($query) use ($monthStart, $monthEnd) {
                     $query->whereIn('created_by', getCompanyAndUsersId())
                         ->whereBetween('fine_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
@@ -57,7 +57,7 @@ class PayrollFineController extends Controller
 
                 return [
                     'id' => $employee->id,
-                    'employee_code' => $employee->employee?->employee_id,
+                    'employee_code' => $employee->employee?->employee_id_display,
                     'name' => $employee->name,
                     'salary' => (float) ($employee->employee?->base_salary ?? 0),
                     'fine_total' => $fineTotal,
@@ -82,7 +82,7 @@ class PayrollFineController extends Controller
             ->map(fn (User $employee) => [
                 'id' => $employee->id,
                 'name' => $employee->name,
-                'employee_id' => $employee->employee?->employee_id,
+                'employee_id' => $employee->employee?->employee_id_display,
                 'department_name' => $employee->employee?->department?->name,
             ]);
 

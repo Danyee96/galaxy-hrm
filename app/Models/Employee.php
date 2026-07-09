@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\EmployeeIdService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use RuntimeException;
 
 class Employee extends Model
 {
@@ -47,6 +48,38 @@ class Employee extends Model
         'employee_status',
         'created_by'
     ];
+
+    protected $appends = [
+        'employee_id_display',
+    ];
+
+    public function getEmployeeIdDisplayAttribute(): string
+    {
+        $creator = $this->created_by ?? (function_exists('creatorId') ? creatorId() : null);
+
+        return EmployeeIdService::display($this->employee_id, $creator);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Employee $employee): void {
+            $employeeId = trim((string) $employee->employee_id);
+
+            if ($employeeId === '') {
+                return;
+            }
+
+            $creator = $employee->created_by
+                ?? $employee->getOriginal('created_by')
+                ?? (function_exists('creatorId') ? creatorId() : null);
+
+            if (EmployeeIdService::displayDuplicateExists($employeeId, $creator, $employee->getKey())) {
+                $displayId = EmployeeIdService::display($employeeId, $creator);
+
+                throw new RuntimeException("Employee ID {$displayId} already exists.");
+            }
+        });
+    }
 
     /**
      * Get the branch that the employee belongs to.

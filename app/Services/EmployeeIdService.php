@@ -40,15 +40,37 @@ class EmployeeIdService
         return strtoupper($prefix).'-'.$employeeId;
     }
 
+    public static function display(string|int|null $employeeId, User|int|null $creator): string
+    {
+        $employeeId = trim((string) $employeeId);
+        if ($employeeId === '') {
+            return '';
+        }
+
+        if (preg_match('/^[A-Za-z]{2}-/', $employeeId)) {
+            [$prefix, $suffix] = explode('-', $employeeId, 2);
+
+            return strtoupper($prefix).'-'.$suffix;
+        }
+
+        return strtoupper(self::prefixFor($creator)).'-'.$employeeId;
+    }
+
     public static function generate(User|int|null $creator): string
     {
         $prefix = self::prefixFor($creator);
-        $creatorId = $creator instanceof User ? $creator->id : $creator;
-        $lastNumber = Employee::where('employee_id', 'like', $prefix.'-%')
-            ->when($creatorId, fn ($query) => $query->where('created_by', $creatorId))
-            ->pluck('employee_id')
-            ->map(function (string $employeeId) use ($prefix) {
-                $suffix = substr($employeeId, strlen($prefix) + 1);
+        $lastNumber = Employee::query()
+            ->select(['employee_id', 'created_by'])
+            ->whereNotNull('employee_id')
+            ->get()
+            ->map(function (Employee $employee) use ($prefix) {
+                $displayId = self::display($employee->employee_id, $employee->created_by);
+
+                if (! str_starts_with($displayId, $prefix.'-')) {
+                    return 0;
+                }
+
+                $suffix = substr($displayId, strlen($prefix) + 1);
 
                 return ctype_digit($suffix) ? (int) $suffix : 0;
             })
@@ -62,5 +84,21 @@ class EmployeeIdService
         } while (Employee::where('employee_id', $employeeId)->exists());
 
         return $employeeId;
+    }
+
+    public static function displayDuplicateExists(string|int|null $employeeId, User|int|null $creator, int|string|null $ignoreEmployeeId = null): bool
+    {
+        $displayId = self::display($employeeId, $creator);
+
+        if ($displayId === '') {
+            return false;
+        }
+
+        return Employee::query()
+            ->select(['id', 'employee_id', 'created_by'])
+            ->whereNotNull('employee_id')
+            ->when($ignoreEmployeeId, fn ($query) => $query->whereKeyNot($ignoreEmployeeId))
+            ->get()
+            ->contains(fn (Employee $employee) => self::display($employee->employee_id, $employee->created_by) === $displayId);
     }
 }

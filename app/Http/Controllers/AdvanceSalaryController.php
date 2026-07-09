@@ -44,7 +44,7 @@ class AdvanceSalaryController extends Controller
                 });
             })
             ->with([
-                'employee:id,user_id,employee_id,base_salary,department_id,whatsapp_number',
+                'employee:id,user_id,employee_id,created_by,base_salary,department_id,whatsapp_number',
                 'employee.department:id,name',
                 'advanceSalaries' => function ($query) use ($monthStart, $monthEnd, $installmentActiveForMonth) {
                     $query->where(function ($query) use ($monthStart, $monthEnd, $installmentActiveForMonth) {
@@ -89,7 +89,7 @@ class AdvanceSalaryController extends Controller
 
                 return [
                     'id' => $employee->id,
-                    'employee_code' => $employee->employee?->employee_id,
+                    'employee_code' => $employee->employee?->employee_id_display,
                     'name' => $employee->name,
                     'department_name' => $employee->employee?->department?->name,
                     'whatsapp_number' => $employee->employee?->whatsapp_number,
@@ -105,7 +105,7 @@ class AdvanceSalaryController extends Controller
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->with([
-                'employee:id,user_id,employee_id,base_salary,whatsapp_number,department_id',
+                'employee:id,user_id,employee_id,created_by,base_salary,whatsapp_number,department_id',
                 'employee.department:id,name',
                 'advanceSalaries' => function ($query) use ($monthStart, $monthEnd) {
                     $query->whereIn('created_by', getCompanyAndUsersId())
@@ -118,7 +118,7 @@ class AdvanceSalaryController extends Controller
             ->map(fn (User $employee) => [
                 'id' => $employee->id,
                 'name' => $employee->name,
-                'employee_code' => $employee->employee?->employee_id,
+                'employee_code' => $employee->employee?->employee_id_display,
                 'department_name' => $employee->employee?->department?->name,
                 'whatsapp_number' => $employee->employee?->whatsapp_number,
                 'salary' => (float) ($employee->employee?->base_salary ?? 0),
@@ -449,7 +449,7 @@ class AdvanceSalaryController extends Controller
             ->whereIn('created_by', getCompanyAndUsersId())
             ->where('status', 'active')
             ->with([
-                'employee:id,user_id,employee_id,base_salary,department_id',
+                'employee:id,user_id,employee_id,created_by,base_salary,department_id',
                 'employee.department:id,name',
                 'advanceSalaries' => function ($query) use ($monthStart, $monthEnd, $installmentActiveForMonth) {
                     $query->where(function ($query) use ($monthStart, $monthEnd, $installmentActiveForMonth) {
@@ -493,7 +493,7 @@ class AdvanceSalaryController extends Controller
                 $latestAdvance = $advances->first();
 
                 return [
-                    'employee_id' => $employee->employee?->employee_id,
+                    'employee_id' => $employee->employee?->employee_id_display,
                     'name' => $employee->name,
                     'department' => $employee->employee?->department?->name,
                     'salary' => $salary,

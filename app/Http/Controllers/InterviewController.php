@@ -67,7 +67,7 @@ class InterviewController extends Controller
                         'id' => $user->id,
                         'name' => $user->name,
                         'type' => $user->type,
-                        'employee_id' => $user->employee->employee_id ?? ''
+                        'employee_id' => $user->employee->employee_id_display ?? ''
                     ];
                 });
 

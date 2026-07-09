@@ -18,12 +18,7 @@ export default function EmployeeShow() {
   const { auth, employee } = usePage().props as any;
   const permissions = auth?.permissions || [];
   const getInitials = useInitials();
-  const formatEmployeeNumber = (value: any) => {
-    const raw = value == null || value === '' ? '' : String(value);
-    if (!raw) return '-';
-    const match = raw.match(/\d+/);
-    return match ? String(Number(match[0])) : raw;
-  };
+  const employeeNumber = employee.employee?.employee_id_display || employee.employee?.employee_id || '-';
   const formatWhatsAppNumber = (value: any) => {
     const digits = String(value || '').replace(/\D/g, '');
     if (!digits) return '-';
@@ -191,7 +186,7 @@ export default function EmployeeShow() {
               <div className="w-full space-y-3">
                 <div className="flex items-center">
                   <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm">{t('Employee ID')}: {formatEmployeeNumber(employee.employee?.employee_id)}</span>
+                  <span className="text-sm">{t('Employee ID')}: {employeeNumber}</span>
                 </div>
                 <div className="flex items-center">
                   <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -269,7 +264,7 @@ export default function EmployeeShow() {
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground">{t('Employee ID')}</h4>
-                      <p>{formatEmployeeNumber(employee.employee?.employee_id)}</p>
+                      <p>{employeeNumber}</p>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground">{t('Email')}</h4>

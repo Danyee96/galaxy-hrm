@@ -126,12 +126,7 @@
     };
     $formatEmployeeNumber = function ($value) {
         $raw = $value === null || $value === '' ? '' : (string) $value;
-        if ($raw === '') {
-            return '-';
-        }
-        preg_match('/\d+/', $raw, $matches);
-
-        return $matches ? (string) ((int) $matches[0]) : $raw;
+        return $raw === '' ? '-' : $raw;
     };
     $formatMinutes = function ($minutes) {
         $total = (int) ($minutes ?? 0);
@@ -176,7 +171,7 @@
         <tr>
             @foreach ($rowEntries as $entry)
                 @php
-                    $employeeNumber = $formatEmployeeNumber($entry->employee?->employee?->employee_id ?? $entry->employee?->employee_id ?? $entry->employee?->id);
+                    $employeeNumber = $formatEmployeeNumber($entry->employee?->employee?->employee_id_display ?? $entry->employee?->employee?->employee_id ?? $entry->employee?->employee_id ?? $entry->employee?->id);
                     $lateMinutes = $getDisplayedLateMinutes($entry);
                     $latePenalty = $getDisplayedLatePenalty($entry);
                     $absentDays = $entry->unpaid_leave_days ?: ($entry->absent_days ?: 0);
