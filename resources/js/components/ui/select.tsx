@@ -85,9 +85,15 @@ const SelectContent = React.forwardRef<
     }
 
     if (React.isValidElement(node)) {
-      const value = node.props.value ? String(node.props.value) : '';
-      const label = node.props['aria-label'] ? String(node.props['aria-label']) : '';
-      const dataSearch = node.props['data-search'] ? String(node.props['data-search']) : '';
+      const props = node.props as {
+        value?: unknown;
+        'aria-label'?: unknown;
+        'data-search'?: unknown;
+        children?: React.ReactNode;
+      };
+      const value = props.value ? String(props.value) : '';
+      const label = props['aria-label'] ? String(props['aria-label']) : '';
+      const dataSearch = props['data-search'] ? String(props['data-search']) : '';
 
       if (dataSearch) {
         return dataSearch;
@@ -96,7 +102,7 @@ const SelectContent = React.forwardRef<
       return [
         value,
         label,
-        searchableText(node.props.children),
+        searchableText(props.children),
       ].filter(Boolean).join(' ');
     }
 
