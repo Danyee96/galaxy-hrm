@@ -16,7 +16,7 @@ class AdvanceSalaryReceiptController extends Controller
         $receipt = $this->receiptData($advanceSalary);
         $imageUrl = URL::temporarySignedRoute('advance-salary-receipts.image', now()->addDays(7), [
             'advanceSalary' => $advanceSalary,
-            'v' => 'smooth-20260705',
+            'v' => 'fontfix-20260710',
         ], false);
         $imageContentType = $this->canRenderRasterReceipt() ? 'image/png' : 'image/svg+xml';
 
@@ -35,7 +35,7 @@ class AdvanceSalaryReceiptController extends Controller
 
         $receipt = $this->receiptData($advanceSalary);
 
-        if (! $this->canRenderGdPngReceipt()) {
+        if (! $this->canRenderGdReceipt()) {
             $svg = $this->svgReceipt($receipt);
             $png = $this->pngFromSvg($svg);
 
@@ -99,8 +99,8 @@ class AdvanceSalaryReceiptController extends Controller
             ->sum('amount');
 
         return [
-            'employee_name' => $advanceSalary->employee?->name ?: '-',
-            'department_name' => $advanceSalary->employee?->employee?->department?->name ?: 'Unassigned',
+            'employee_name' => $this->receiptText($advanceSalary->employee?->name ?: '-'),
+            'department_name' => $this->receiptText($advanceSalary->employee?->employee?->department?->name ?: 'Unassigned'),
             'amount' => number_format((float) $advanceSalary->amount),
             'date' => Carbon::parse($date)->format('j F Y'),
             'month_total' => number_format((float) $monthTotal),
@@ -113,6 +113,27 @@ class AdvanceSalaryReceiptController extends Controller
         if (! URL::hasValidSignature($request) && ! URL::hasValidSignature($request, false)) {
             abort(403);
         }
+    }
+
+    private function receiptText(?string $value): string
+    {
+        $text = trim((string) $value);
+
+        if ($text === '') {
+            return '-';
+        }
+
+        if (function_exists('iconv')) {
+            $converted = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+            if ($converted !== false) {
+                $text = $converted;
+            }
+        }
+
+        $text = preg_replace('/[^\x20-\x7E]/', '', $text) ?: $text;
+        $text = preg_replace('/\s+/', ' ', $text) ?: $text;
+
+        return trim($text) ?: '-';
     }
 
     private function publicOrigin(Request $request): string
@@ -130,7 +151,7 @@ class AdvanceSalaryReceiptController extends Controller
     {
         $font = $this->fontPath($bold);
 
-        if ($font) {
+        if ($font && function_exists('imagettfbbox') && function_exists('imagettftext')) {
             while ($size > 18) {
                 $box = imagettfbbox($size, 0, $font, $text);
                 $width = $box[2] - $box[0];
@@ -150,7 +171,41 @@ class AdvanceSalaryReceiptController extends Controller
             return;
         }
 
-        throw new \RuntimeException('A TrueType font is required to render the advance receipt PNG.');
+        $this->centerBitmapText($image, $text, $y, $size, $color, $maxWidth);
+    }
+
+    private function centerBitmapText($image, string $text, int $y, int $size, int $color, int $maxWidth): void
+    {
+        $font = 5;
+        $sourceWidth = imagefontwidth($font) * strlen($text);
+        $sourceHeight = imagefontheight($font);
+
+        if ($sourceWidth <= 0 || $sourceHeight <= 0) {
+            return;
+        }
+
+        $targetHeight = max(18, $size);
+        $targetWidth = (int) round($sourceWidth * ($targetHeight / $sourceHeight));
+
+        if ($targetWidth > $maxWidth) {
+            $ratio = $maxWidth / $targetWidth;
+            $targetWidth = (int) round($targetWidth * $ratio);
+            $targetHeight = (int) round($targetHeight * $ratio);
+        }
+
+        $textImage = imagecreatetruecolor($sourceWidth, $sourceHeight);
+        imagealphablending($textImage, false);
+        imagesavealpha($textImage, true);
+        $transparent = imagecolorallocatealpha($textImage, 255, 255, 255, 127);
+        $colorParts = imagecolorsforindex($image, $color);
+        $textColor = imagecolorallocate($textImage, $colorParts['red'], $colorParts['green'], $colorParts['blue']);
+        imagefilledrectangle($textImage, 0, 0, $sourceWidth, $sourceHeight, $transparent);
+        imagestring($textImage, $font, 0, 0, $text, $textColor);
+
+        $x = (int) ((imagesx($image) - $targetWidth) / 2);
+        $top = (int) ($y - ($targetHeight / 2));
+        imagecopyresampled($image, $textImage, $x, $top, 0, 0, $targetWidth, $targetHeight, $sourceWidth, $sourceHeight);
+        imagedestroy($textImage);
     }
 
     private function svgReceipt(array $receipt): string
@@ -210,15 +265,15 @@ SVG;
 
     private function canRenderRasterReceipt(): bool
     {
-        return $this->canRenderGdPngReceipt() || $this->canRenderImagickPngReceipt();
+        return $this->canRenderGdReceipt() || $this->canRenderImagickPngReceipt();
     }
 
-    private function canRenderGdPngReceipt(): bool
+    private function canRenderGdReceipt(): bool
     {
         return function_exists('imagecreatetruecolor')
-            && function_exists('imagettftext')
-            && $this->fontPath(true)
-            && $this->fontPath(false);
+            && function_exists('imagepng')
+            && function_exists('imagestring')
+            && function_exists('imagecopyresampled');
     }
 
     private function pngFromSvg(string $svg): ?string
