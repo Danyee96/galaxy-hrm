@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ActionItemController extends Controller
 {
+    //test
     public function index(Request $request)
     {
         if (Auth::user()->can('manage-action-items')) {
