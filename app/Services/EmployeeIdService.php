@@ -81,9 +81,21 @@ class EmployeeIdService
         do {
             $employeeId = $prefix.'-'.$nextNumber;
             $nextNumber++;
-        } while (Employee::where('employee_id', $employeeId)->exists());
+        } while (self::displayDuplicateExists($employeeId, $creator));
 
         return $employeeId;
+    }
+
+    public static function nextNumber(User|int|null $creator): string
+    {
+        $employeeId = self::generate($creator);
+        $normalized = trim((string) $employeeId);
+
+        if (preg_match('/^[A-Za-z]{2}-(\d+)$/', $normalized, $matches)) {
+            return $matches[1];
+        }
+
+        return preg_replace('/\D+/', '', $normalized) ?? '';
     }
 
     public static function displayDuplicateExists(string|int|null $employeeId, User|int|null $creator, int|string|null $ignoreEmployeeId = null): bool

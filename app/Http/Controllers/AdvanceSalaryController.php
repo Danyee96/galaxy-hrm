@@ -69,10 +69,7 @@ class AdvanceSalaryController extends Controller
             $query->where(function ($query) use ($search) {
                 $query->where('name', 'like', '%'.$search.'%')
                     ->orWhereHas('employee', function ($query) use ($search) {
-                        $query->where('employee_id', 'like', '%'.$search.'%')
-                            ->orWhereHas('department', function ($query) use ($search) {
-                                $query->where('name', 'like', '%'.$search.'%');
-                            });
+                        $query->where('employee_id', 'like', '%'.$search.'%');
                     });
             });
         }
@@ -474,10 +471,7 @@ class AdvanceSalaryController extends Controller
             $query->where(function ($query) use ($search) {
                 $query->where('name', 'like', '%'.$search.'%')
                     ->orWhereHas('employee', function ($query) use ($search) {
-                        $query->where('employee_id', 'like', '%'.$search.'%')
-                            ->orWhereHas('department', function ($query) use ($search) {
-                                $query->where('name', 'like', '%'.$search.'%');
-                            });
+                        $query->where('employee_id', 'like', '%'.$search.'%');
                     });
             });
         }

@@ -10,7 +10,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 
 export default function Departments() {
   const { t } = useTranslation();
@@ -189,6 +189,7 @@ export default function Departments() {
   const employeeOptions = (employees || []).map((employee: any) => ({
     value: employee.id.toString(),
     label: formatEmployeeOptionLabel(employee),
+    searchText: getEmployeeSearchText(employee),
   }));
 
   const formInitialData = currentItem

@@ -5,9 +5,11 @@ namespace App\Http\Requests\Auth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
 
 class LoginRequest extends FormRequest
 {
@@ -37,25 +39,43 @@ class LoginRequest extends FormRequest
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-     public function authenticate(): void
+    public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $email = Str::lower(trim((string) $this->input('email')));
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if (! $user) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                'email' => __('No account was found with this email address.'),
             ]);
         }
-        // Check if user account is inactive
-        $user = Auth::user();
-            if ($user->status === 'inactive') {
-                Auth::logout();
-                throw ValidationException::withMessages([
-                    'email' => __('Your account is inactive. Please contact administrator.'),
-                ]);
-            }
+
+        if (! Hash::check((string) $this->input('password'), (string) $user->password)) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'password' => __('The password you entered is incorrect.'),
+            ]);
+        }
+
+        if (($user->status ?? null) === 'inactive') {
+            throw ValidationException::withMessages([
+                'email' => __('Your account is inactive. Please contact administrator.'),
+            ]);
+        }
+
+        if (array_key_exists('is_enable_login', $user->getAttributes()) && ! (bool) $user->is_enable_login) {
+            throw ValidationException::withMessages([
+                'email' => __('Login is disabled for this account. Please contact administrator.'),
+            ]);
+        }
+
+        Auth::login($user, $this->boolean('remember'));
+
         RateLimiter::clear($this->throttleKey());
     }
 
@@ -75,9 +95,8 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
+            'email' => __('Too many login attempts. Please try again in :seconds seconds.', [
                 'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
             ]),
         ]);
     }

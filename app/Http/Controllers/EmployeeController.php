@@ -50,10 +50,7 @@ class EmployeeController extends Controller
                 $query->where(function ($q) use ($request) {
                     $q->where('name', 'like', '%' . $request->search . '%')
                         ->orWhereHas('employee', function ($eq) use ($request) {
-                            $eq->where('employee_id', 'like', '%' . $request->search . '%')
-                                ->orWhereHas('department', function ($dq) use ($request) {
-                                    $dq->where('name', 'like', '%' . $request->search . '%');
-                                });
+                            $eq->where('employee_id', 'like', '%' . $request->search . '%');
                         });
                 });
             }
@@ -141,6 +138,7 @@ class EmployeeController extends Controller
 
             return Inertia::render('hr/employees/create', [
                 'departments' => $departments,
+                'nextEmployeeId' => EmployeeIdService::nextNumber(creatorId()),
             ]);
         } else {
             return redirect()->back()->with('error', __('Permission Denied.'));
@@ -155,16 +153,13 @@ class EmployeeController extends Controller
         if (Auth::user()->can('create-employees')) {
             try {
                 $rawEmployeeId = trim((string) $request->employee_id);
-                $request->merge([
-                    'employee_id' => EmployeeIdService::normalize($rawEmployeeId, creatorId()),
-                ]);
 
                 $validator = Validator::make($request->all(), [
                     'employee_id' => [
                         'nullable',
                         'string',
                         'max:255',
-                        Rule::unique('employees', 'employee_id'),
+                        'regex:/^\d+$/',
                     ],
                     'name' => 'required|string|max:255',
                     'department_id' => 'required|exists:departments,id',
@@ -172,14 +167,18 @@ class EmployeeController extends Controller
                     'salary' => 'nullable|numeric|min:0',
                     'bonus' => 'nullable|numeric|min:0',
                 ], [
-                    'employee_id.unique' => __('Employee ID already exists.'),
+                    'employee_id.regex' => __('Employee ID must contain numbers only.'),
                 ]);
 
                 if ($validator->fails()) {
                     return redirect()->back()->withErrors($validator)->withInput();
                 }
 
-                if ($rawEmployeeId !== '' && $rawEmployeeId !== $request->employee_id && Employee::where('created_by', creatorId())->where('employee_id', $rawEmployeeId)->exists()) {
+                $employeeId = $rawEmployeeId !== ''
+                    ? EmployeeIdService::normalize($rawEmployeeId, creatorId())
+                    : Employee::generateEmployeeId(creatorId());
+
+                if (EmployeeIdService::displayDuplicateExists($employeeId, creatorId())) {
                     return redirect()->back()->withErrors([
                         'employee_id' => __('Employee ID already exists.'),
                     ])->withInput();
@@ -212,7 +211,7 @@ class EmployeeController extends Controller
 
                 $employee = new Employee();
                 $employee->user_id = $user->id;
-                $employee->employee_id = trim((string) $request->employee_id) ?: Employee::generateEmployeeId(creatorId());
+                $employee->employee_id = $employeeId;
                 $employee->branch_id = $department->branch_id;
                 $employee->department_id = $department->id;
                 $employee->whatsapp_number = $this->normalizePakistanWhatsAppNumber($request->whatsapp_number);
@@ -271,32 +270,111 @@ class EmployeeController extends Controller
         }
 
         $rawEmployeeId = trim((string) $request->query('employee_id', ''));
-        $employeeId = EmployeeIdService::normalize($rawEmployeeId, creatorId());
         $ignoreId = $request->query('ignore_id');
 
-        if ($employeeId === '') {
+        if ($rawEmployeeId === '') {
             return response()->json([
                 'available' => true,
                 'message' => null,
             ]);
         }
 
-        $exists = Employee::where(function ($query) use ($employeeId, $rawEmployeeId) {
-                $query->where('employee_id', $employeeId);
+        if (! preg_match('/^\d+$/', $rawEmployeeId)) {
+            return response()->json([
+                'available' => false,
+                'message' => __('Employee ID must contain numbers only.'),
+            ]);
+        }
 
-                if ($rawEmployeeId !== $employeeId) {
-                    $query->orWhere(function ($rawQuery) use ($rawEmployeeId) {
-                        $rawQuery->where('created_by', creatorId())
-                            ->where('employee_id', $rawEmployeeId);
-                    });
-                }
-            })
-            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
-            ->exists();
+        $employeeId = EmployeeIdService::normalize($rawEmployeeId, creatorId());
+        $exists = EmployeeIdService::displayDuplicateExists($employeeId, creatorId(), $ignoreId);
 
         return response()->json([
             'available' => ! $exists,
             'message' => $exists ? __('Employee ID already exists.') : null,
+        ]);
+    }
+
+    public function export(Request $request)
+    {
+        if (! Auth::user()->can('view-employees')) {
+            return redirect()->back()->with('error', __('Permission Denied.'));
+        }
+
+        $query = User::with(['employee.branch', 'employee.department', 'employee.designation'])
+            ->withSum(['bonuses as profile_bonus' => fn ($q) => $q->where('bonus_type', 'custom')->where('notes', 'Employee profile bonus')], 'amount')
+            ->where(function ($q) {
+                if (Auth::user()->can('manage-any-employees')) {
+                    $q->whereIn('created_by', getCompanyAndUsersId());
+                } elseif (Auth::user()->can('manage-own-employees')) {
+                    $q->where('created_by', Auth::id())->orWhere('id', Auth::id());
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+            })
+            ->where('type', 'employee');
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhereHas('employee', function ($eq) use ($request) {
+                        $eq->where('employee_id', 'like', '%'.$request->search.'%');
+                    });
+            });
+        }
+
+        if ($request->filled('department') && $request->department !== 'all') {
+            $query->whereHas('employee', function ($q) use ($request) {
+                $q->where('department_id', $request->department);
+            });
+        }
+
+        $filename = 'employees-'.now()->format('Y-m-d-His').'.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'Employee ID',
+                'Name',
+                'Email',
+                'Department',
+                'Designation',
+                'Branch',
+                'WhatsApp Number',
+                'Phone',
+                'Salary',
+                'Bonus',
+                'Status',
+                'Date of Joining',
+            ]);
+
+            $query
+                ->orderByRaw($this->userEmployeeIdSortExpression().' asc')
+                ->orderBy('users.name')
+                ->chunk(500, function ($employees) use ($handle) {
+                    foreach ($employees as $user) {
+                        $employee = $user->employee;
+
+                        fputcsv($handle, [
+                            $employee?->employee_id_display ?? $employee?->employee_id ?? '',
+                            $user->name,
+                            $user->email,
+                            $employee?->department?->name ?? '',
+                            $employee?->designation?->name ?? '',
+                            $employee?->branch?->name ?? '',
+                            $employee?->whatsapp_number ?? '',
+                            $employee?->phone ?? '',
+                            $employee?->base_salary ?? '',
+                            $user->profile_bonus ?? '',
+                            $employee?->employee_status ?? '',
+                            $employee?->date_of_joining ?? '',
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 

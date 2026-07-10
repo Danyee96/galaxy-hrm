@@ -358,13 +358,14 @@ export function CrudFormModal({
                   <SelectItem
                     key={option[field.relation!.valueField]}
                     value={String(option[field.relation!.valueField])}
+                    data-search={option.searchText || option.search_text}
                   >
                     {option[field.relation!.labelField]}
                   </SelectItem>
                 ))
               ) : (
                 options.map((option) => (
-                  <SelectItem key={option.value} value={String(option.value)}>
+                  <SelectItem key={option.value} value={String(option.value)} data-search={option.searchText || option.search_text}>
                     {option.label}
                   </SelectItem>
                 ))

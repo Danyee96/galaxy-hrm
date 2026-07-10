@@ -71,17 +71,50 @@ const SelectContent = React.forwardRef<
 >(({ className, children, position = "popper", searchable, ...props }, ref) => {
   const [searchTerm, setSearchTerm] = React.useState('');
 
+  const searchableText = React.useCallback((node: React.ReactNode): string => {
+    if (node === null || node === undefined || typeof node === 'boolean') {
+      return '';
+    }
+
+    if (typeof node === 'string' || typeof node === 'number') {
+      return String(node);
+    }
+
+    if (Array.isArray(node)) {
+      return node.map(searchableText).join(' ');
+    }
+
+    if (React.isValidElement(node)) {
+      const value = node.props.value ? String(node.props.value) : '';
+      const label = node.props['aria-label'] ? String(node.props['aria-label']) : '';
+      const dataSearch = node.props['data-search'] ? String(node.props['data-search']) : '';
+
+      if (dataSearch) {
+        return dataSearch;
+      }
+
+      return [
+        value,
+        label,
+        searchableText(node.props.children),
+      ].filter(Boolean).join(' ');
+    }
+
+    return '';
+  }, []);
+
   const filteredChildren = React.useMemo(() => {
     if (!searchable || !searchTerm) return children;
 
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+
     return React.Children.toArray(children).filter((child) => {
       if (React.isValidElement(child)) {
-        const childText = child.props.children?.toString().toLowerCase() || '';
-        return childText.includes(searchTerm.toLowerCase());
+        return searchableText(child).toLowerCase().includes(normalizedSearch);
       }
       return true;
     });
-  }, [children, searchTerm, searchable]);
+  }, [children, searchTerm, searchable, searchableText]);
 
   return (
     <SelectPrimitive.Portal>

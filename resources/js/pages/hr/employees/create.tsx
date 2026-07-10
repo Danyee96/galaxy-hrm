@@ -12,8 +12,8 @@ import { useTranslation } from 'react-i18next';
 
 export default function EmployeeCreate() {
   const { t } = useTranslation();
-  const { departments, flash = {} } = usePage().props as any;
-  const [formData, setFormData] = useState({ employee_id: '', name: '', department_id: '', whatsapp_number: '', salary: '', bonus: '' });
+  const { departments, nextEmployeeId = '', flash = {} } = usePage().props as any;
+  const [formData, setFormData] = useState({ employee_id: String(nextEmployeeId || ''), name: '', department_id: '', whatsapp_number: '', salary: '', bonus: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCheckingEmployeeId, setIsCheckingEmployeeId] = useState(false);
   const [isEmployeeIdAvailable, setIsEmployeeIdAvailable] = useState<boolean | null>(null);
@@ -36,7 +36,8 @@ export default function EmployeeCreate() {
   };
 
   const handleChange = (name: 'employee_id' | 'name' | 'department_id' | 'whatsapp_number' | 'salary' | 'bonus', value: string) => {
-    setFormData((current) => ({ ...current, [name]: value }));
+    const nextValue = name === 'employee_id' ? value.replace(/\D/g, '') : value;
+    setFormData((current) => ({ ...current, [name]: nextValue }));
     if (errors[name]) {
       setErrors((current) => {
         const next = { ...current };
@@ -165,6 +166,9 @@ export default function EmployeeCreate() {
               <Label htmlFor="employee_id">{t('Employee ID')}</Label>
               <Input
                 id="employee_id"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={formData.employee_id}
                 onChange={(event) => handleChange('employee_id', event.target.value)}
                 className={errors.employee_id ? 'border-red-500' : ''}

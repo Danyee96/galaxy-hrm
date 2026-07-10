@@ -5,7 +5,7 @@ import { usePage, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 import { ArrowLeft, Edit, Trash, UserPlus, ArrowDownLeft, Wrench, QrCode, Download, Image } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -879,7 +879,8 @@ export default function AssetShow() {
               required: true,
               options: (employees || []).map((emp: any) => ({
                 value: emp.id.toString(),
-                label: formatEmployeeOptionLabel(emp)
+                label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
               }))
             },
             { 

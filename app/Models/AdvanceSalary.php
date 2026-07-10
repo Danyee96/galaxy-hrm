@@ -11,6 +11,8 @@ class AdvanceSalary extends BaseModel
 
     protected $fillable = [
         'employee_id',
+        'payroll_run_id',
+        'payroll_entry_id',
         'amount',
         'deducted_amount',
         'repayment_type',
@@ -38,6 +40,16 @@ class AdvanceSalary extends BaseModel
     public function employee()
     {
         return $this->belongsTo(User::class, 'employee_id');
+    }
+
+    public function payrollRun()
+    {
+        return $this->belongsTo(PayrollRun::class);
+    }
+
+    public function payrollEntry()
+    {
+        return $this->belongsTo(PayrollEntry::class);
     }
 
     protected static function booted(): void

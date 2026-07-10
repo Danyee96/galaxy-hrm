@@ -7,7 +7,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -404,7 +404,7 @@ export default function AttendanceRecords() {
   ];
 
   const filteredEmployees = sortedEmployees.filter((employee: any) =>
-    formatEmployeeOptionLabel(employee).toLowerCase().includes(employeeSearch.toLowerCase())
+    getEmployeeSearchText(employee).includes(employeeSearch.toLowerCase().trim())
   );
 
   const selectEmployee = (employee: any) => {
@@ -643,6 +643,7 @@ export default function AttendanceRecords() {
               options: sortedEmployees.map((emp: any) => ({
                 value: emp.id.toString(),
                 label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp),
               })),
             },
             { name: 'date', label: t('Date'), type: 'date', required: true },
@@ -765,7 +766,7 @@ export default function AttendanceRecords() {
                     {openMappingEmployeePicker === group.key && !ignoredImportGroups[group.key] && (
                       <div className="absolute left-0 right-0 top-full z-[100] mt-2 max-h-80 overflow-y-auto rounded-lg border border-slate-200 bg-white py-2 shadow-xl">
                         {sortedEmployees
-                          .filter((employee: any) => formatEmployeeOptionLabel(employee).toLowerCase().includes((mappingEmployeeSearches[group.key] || '').toLowerCase()))
+                          .filter((employee: any) => getEmployeeSearchText(employee).includes((mappingEmployeeSearches[group.key] || '').toLowerCase().trim()))
                           .map((employee: any) => (
                             <button
                               key={employee.id}
@@ -779,7 +780,7 @@ export default function AttendanceRecords() {
                               {formatEmployeeOptionLabel(employee)}
                             </button>
                           ))}
-                        {sortedEmployees.filter((employee: any) => formatEmployeeOptionLabel(employee).toLowerCase().includes((mappingEmployeeSearches[group.key] || '').toLowerCase())).length === 0 && (
+                        {sortedEmployees.filter((employee: any) => getEmployeeSearchText(employee).includes((mappingEmployeeSearches[group.key] || '').toLowerCase().trim())).length === 0 && (
                           <div className="px-4 py-3 text-sm text-slate-500">{t('No employees found')}</div>
                         )}
                       </div>

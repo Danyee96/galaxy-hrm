@@ -7,7 +7,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus, FileText, User, DollarSign, Calendar, AlertTriangle } from 'lucide-react';
@@ -392,7 +392,8 @@ export default function EmployeeContracts() {
     { value: '_empty_', label: t('All Employees') ,disabled: true},
     ...(employees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: formatEmployeeOptionLabel(emp)
+      label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
     }))
   ];
 
@@ -400,7 +401,8 @@ export default function EmployeeContracts() {
     { value: '_empty_', label: t('Select Employee') },
     ...(employees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: formatEmployeeOptionLabel(emp)
+      label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
     }))
   ];
 

@@ -292,6 +292,7 @@ class PayrollRunController extends Controller
 
             if ($payrollRun) {
                 try {
+                    $payrollRun->deleteForwardedAdvances();
                     $payrollRun->delete();
 
                     return redirect()->back()->with('success', __('Payroll run deleted successfully'));

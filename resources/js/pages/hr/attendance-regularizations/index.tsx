@@ -9,7 +9,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 
@@ -349,7 +349,8 @@ export default function AttendanceRegularizations() {
     { value: 'all', label: t('All Employees') , disabled : true},
     ...(employees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: formatEmployeeOptionLabel(emp)
+      label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
     }))
   ];
 
@@ -478,7 +479,8 @@ export default function AttendanceRegularizations() {
             //   required: true,
             //   options: employees ? employees.map((emp: any) => ({
             //     value: emp.id.toString(),
-            //     label: formatEmployeeOptionLabel(emp)
+            //     label: formatEmployeeOptionLabel(emp),
+            //     searchText: getEmployeeSearchText(emp)
             //   })) : []
             // },
             // {
@@ -500,7 +502,8 @@ export default function AttendanceRegularizations() {
                   searchable: true,
                   options: employees ? employees.map((emp: any) => ({
                     value: emp.id.toString(),
-                    label: formatEmployeeOptionLabel(emp)
+                    label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
                   })) : []
                 },
                 {

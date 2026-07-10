@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 
 export default function CreateEmployeeReview() {
   const { t } = useTranslation();
@@ -124,7 +124,7 @@ export default function CreateEmployeeReview() {
                   </SelectTrigger>
                   <SelectContent searchable={true}>
                     {employees.map((employee: any) => (
-                      <SelectItem key={employee.id} value={employee.id.toString()}>
+                      <SelectItem key={employee.id} value={employee.id.toString()} data-search={getEmployeeSearchText(employee)}>
                         {formatEmployeeOptionLabel(employee)}
                       </SelectItem>
                     ))}
@@ -144,7 +144,7 @@ export default function CreateEmployeeReview() {
                   </SelectTrigger>
                   <SelectContent searchable={true}>
                     {employees.map((employee: any) => (
-                      <SelectItem key={employee.id} value={employee.id.toString()}>
+                      <SelectItem key={employee.id} value={employee.id.toString()} data-search={getEmployeeSearchText(employee)}>
                         {formatEmployeeOptionLabel(employee)}
                       </SelectItem>
                     ))}

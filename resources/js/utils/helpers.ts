@@ -311,6 +311,14 @@ const formatEmployeeOptionLabel = (employee: any): string => {
     .join(' ');
 };
 
+const getEmployeeSearchText = (employee: any): string => {
+  const fullName = [employee?.first_name, employee?.last_name].filter(Boolean).join(' ');
+  const name = String(employee?.name || employee?.employee?.name || fullName || '').trim();
+  const code = getEmployeeCode(employee);
+
+  return [name, code].filter(Boolean).join(' ').toLowerCase();
+};
+
 export {
   // formatDate,
   // formatTime,
@@ -328,4 +336,5 @@ export {
   formatEmployeeOptionLabel,
   getEmployeeCode,
   getEmployeeDepartmentName,
+  getEmployeeSearchText,
 }

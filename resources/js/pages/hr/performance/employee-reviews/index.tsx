@@ -8,7 +8,7 @@ import { CrudTable } from '@/components/CrudTable';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel, getEmployeeCode } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText, getEmployeeCode } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus, ClipboardList } from 'lucide-react';
@@ -335,7 +335,8 @@ export default function EmployeeReviews() {
     { value: '', label: t('Select Employee'), disabled: true },
     ...(employees || []).map((employee: any) => ({
       value: employee.id.toString(),
-      label: formatEmployeeOptionLabel(employee)
+      label: formatEmployeeOptionLabel(employee),
+    searchText: getEmployeeSearchText(employee)
     }))
   ];
 

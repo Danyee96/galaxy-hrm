@@ -8,7 +8,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { hasPermission } from '@/utils/authorization';
 import { router, usePage } from '@inertiajs/react';
-import { Plus, Trash2, Upload } from 'lucide-react';
+import { Download, Plus, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -198,7 +198,22 @@ export default function Employees() {
     });
   };
 
+  const exportEmployees = () => {
+    window.location.href = route('hr.employees.export', {
+      search: searchTerm || undefined,
+      department: selectedDepartment !== 'all' ? selectedDepartment : undefined,
+    });
+  };
+
   const pageActions = [];
+  if (hasPermission(permissions, 'view-employees')) {
+    pageActions.push({
+      label: t('Export Employees'),
+      icon: <Download className="h-4 w-4 mr-2" />,
+      variant: 'outline',
+      onClick: exportEmployees,
+    });
+  }
   if (hasPermission(permissions, 'create-employees')) {
     const canCreate = !planLimits || planLimits.can_create;
     pageActions.push({

@@ -9,7 +9,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { InlineDateRangeCalendar, InlineMonthCalendar } from '@/components/ui/date-picker';
@@ -595,7 +595,8 @@ export default function PayrollRuns() {
               placeholder: t('Search and select employees'),
               options: employees.map((employee: any) => ({
                 value: String(employee.id),
-                label: formatEmployeeOptionLabel(employee)
+                label: formatEmployeeOptionLabel(employee),
+    searchText: getEmployeeSearchText(employee)
               })),
               dropdownHeight: '520px',
               conditional: (_mode: string, formData: any) => !formData.select_all

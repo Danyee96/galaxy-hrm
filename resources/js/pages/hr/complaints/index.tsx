@@ -8,7 +8,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel, getEmployeeCode } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText, getEmployeeCode } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus } from 'lucide-react';
@@ -516,7 +516,8 @@ export default function Complaints() {
     { value: '', label: t('All Employees'), disabled: true },
     ...(complainants || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: formatEmployeeOptionLabel(emp)
+      label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
     }))
   ];
 
@@ -525,7 +526,8 @@ export default function Complaints() {
     { value: '', label: t('All Employees'), disabled: true },
     ...(againstEmployees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: formatEmployeeOptionLabel(emp)
+      label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
     }))
   ];
 

@@ -14,7 +14,7 @@ import { toast } from '@/components/custom-toast';
 import { router, usePage } from '@inertiajs/react';
 import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Download, Forward, Pencil, Plus, Search, Share2, Trash2, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 
 const RECENT_ADVANCE_STORAGE_KEY = 'hr.recentAdvanceReceipt';
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -48,6 +48,7 @@ export default function AdvanceSalaries() {
   const employeeOptions = (employees || []).map((employee: any) => ({
     value: String(employee.id),
     label: formatEmployeeOptionLabel(employee),
+    searchText: getEmployeeSearchText(employee),
   }));
   const visibleEmployeeIds = (advanceEmployees?.data || []).map((employee: any) => Number(employee.id));
   const allVisibleSelected = visibleEmployeeIds.length > 0 && visibleEmployeeIds.every((id: number) => selectedEmployeeIds.includes(id));
@@ -730,7 +731,7 @@ export default function AdvanceSalaries() {
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={t('Search employee, ID, or department...')}
+                placeholder={t('Search employee or ID...')}
                 className="pl-9 lg:max-w-xl"
               />
             </div>

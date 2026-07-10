@@ -9,7 +9,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 import { Plus, Calendar } from 'lucide-react';
@@ -554,7 +554,8 @@ export default function TrainingSessions() {
               type: 'multi-select',
               options: (employees || []).map((employee: any) => ({
                 value: employee.id.toString(),
-                label: formatEmployeeOptionLabel(employee)
+                label: formatEmployeeOptionLabel(employee),
+    searchText: getEmployeeSearchText(employee)
               }))
             },
             { 

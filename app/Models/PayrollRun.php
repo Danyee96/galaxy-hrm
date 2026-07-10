@@ -52,12 +52,34 @@ class PayrollRun extends BaseModel
         return $this->hasManyThrough(Payslip::class, PayrollEntry::class);
     }
 
+    public function forwardedAdvances()
+    {
+        return $this->hasMany(AdvanceSalary::class, 'payroll_run_id');
+    }
+
     /**
      * Get the user who created the payroll run.
      */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function forwardedAdvanceNote(): string
+    {
+        return 'Minus from previous month - Payroll Run #'.$this->id;
+    }
+
+    public function deleteForwardedAdvances(): void
+    {
+        $note = $this->forwardedAdvanceNote();
+
+        AdvanceSalary::where(function ($query) use ($note) {
+                $query->where('payroll_run_id', $this->id)
+                    ->orWhere('notes', $note);
+            })
+            ->whereIn('created_by', getCompanyAndUsersId())
+            ->delete();
     }
 
     /**
@@ -455,14 +477,17 @@ class PayrollRun extends BaseModel
             ->addMonthNoOverflow()
             ->startOfMonth()
             ->toDateString();
-        $note = 'Minus from previous month - Payroll Run #'.$this->id;
+        $note = $this->forwardedAdvanceNote();
         $negativeEntries = $this->payrollEntries()
             ->where('net_pay', '<', 0)
-            ->get(['employee_id', 'net_pay', 'created_by'])
+            ->get(['id', 'employee_id', 'net_pay', 'created_by'])
             ->keyBy('employee_id');
 
         AdvanceSalary::whereIn('created_by', getCompanyAndUsersId())
-            ->where('notes', $note)
+            ->where(function ($query) use ($note) {
+                $query->where('payroll_run_id', $this->id)
+                    ->orWhere('notes', $note);
+            })
             ->whereDate('request_date', $nextMonthDate)
             ->whereNotIn('employee_id', $negativeEntries->keys())
             ->delete();
@@ -474,13 +499,22 @@ class PayrollRun extends BaseModel
                 continue;
             }
 
+            AdvanceSalary::whereIn('created_by', getCompanyAndUsersId())
+                ->where('employee_id', $entry->employee_id)
+                ->whereDate('request_date', $nextMonthDate)
+                ->where('notes', $note)
+                ->whereNull('payroll_run_id')
+                ->delete();
+
             AdvanceSalary::updateOrCreate(
                 [
+                    'payroll_run_id' => $this->id,
                     'employee_id' => $entry->employee_id,
-                    'request_date' => $nextMonthDate,
-                    'notes' => $note,
                 ],
                 [
+                    'payroll_entry_id' => $entry->id,
+                    'request_date' => $nextMonthDate,
+                    'notes' => $note,
                     'amount' => $amount,
                     'deducted_amount' => 0,
                     'repayment_type' => 'full',

@@ -9,7 +9,7 @@ import { CrudFormModal } from '@/components/CrudFormModal';
 import { CrudDeleteModal } from '@/components/CrudDeleteModal';
 import { toast } from '@/components/custom-toast';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchAndFilterBar } from '@/components/ui/search-and-filter-bar';
 
@@ -352,7 +352,8 @@ export default function TimeEntries() {
     { value: 'all', label: t('All Employees') },
     ...(employees || []).map((emp: any) => ({
       value: emp.id.toString(),
-      label: formatEmployeeOptionLabel(emp)
+      label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
     }))
   ];
 
@@ -492,7 +493,8 @@ export default function TimeEntries() {
               required: true,
               options: employees ? employees.map((emp: any) => ({
                 value: emp.id.toString(),
-                label: formatEmployeeOptionLabel(emp)
+                label: formatEmployeeOptionLabel(emp),
+    searchText: getEmployeeSearchText(emp)
               })) : []
             },
             { name: 'date', label: t('Date'), type: 'date', required: true },

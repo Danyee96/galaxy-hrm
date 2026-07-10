@@ -9,7 +9,7 @@ import { hasPermission } from '@/utils/authorization';
 import { router, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatEmployeeOptionLabel } from '@/utils/helpers';
+import { formatEmployeeOptionLabel, getEmployeeSearchText } from '@/utils/helpers';
 
 export default function BonusManagement() {
   const { t } = useTranslation();
@@ -20,7 +20,8 @@ export default function BonusManagement() {
   const [mode, setMode] = useState<'create' | 'edit' | 'view'>('create');
   const [current, setCurrent] = useState<any>(null);
 
-  const employeeOptions = (employees || []).map((employee: any) => ({ value: String(employee.id), label: formatEmployeeOptionLabel(employee) }));
+  const employeeOptions = (employees || []).map((employee: any) => ({ value: String(employee.id), label: formatEmployeeOptionLabel(employee),
+    searchText: getEmployeeSearchText(employee) }));
   const typeOptions = [
     { value: 'performance', label: t('Performance Bonus') },
     { value: 'eid', label: t('Eid Bonus') },
