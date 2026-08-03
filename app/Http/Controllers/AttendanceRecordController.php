@@ -181,7 +181,8 @@ class AttendanceRecordController extends Controller
             'holidays' => $days->where('status', 'holiday')->count(),
             'missing_records' => $days->where('status', 'no_record')->count(),
             'late_days' => $days->where('is_late', true)->count(),
-            'total_late_minutes' => $days->sum('late_minutes'),
+            'total_late_minutes' => $records
+                ->sum(fn (AttendanceRecord $record) => $record->payableLateMinutes()),
             'early_departures' => $days->where('is_early_departure', true)->count(),
             'total_early_leave_minutes' => $days->sum('early_leave_minutes'),
             'total_hours' => round($days->sum('total_hours'), 2),

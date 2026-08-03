@@ -179,6 +179,18 @@ class AttendanceRecord extends BaseModel
     }
 
     /**
+     * Minutes that may contribute to attendance totals and payroll deductions.
+     *
+     * Early departure is informational only. Requiring the record to be marked
+     * late also prevents inconsistent legacy/imported rows from charging an
+     * employee for a value that is not an actual late arrival.
+     */
+    public function payableLateMinutes(): int
+    {
+        return $this->is_late ? max(0, (int) $this->late_minutes) : 0;
+    }
+
+    /**
      * Process complete attendance - calculate everything automatically.
      */
     public function processAttendance()

@@ -137,7 +137,7 @@ class PayrollRun extends BaseModel
     {
         $penalty = $attendanceRecords->sum(function ($record) use ($basicSalary, $workingSchedule, $settings) {
             return $this->calculatePerMinuteSalaryForDate($basicSalary, $record->date, $workingSchedule, $settings)
-                * (int) $record->late_minutes;
+                * $record->payableLateMinutes();
         });
 
         return round($penalty, 2);
@@ -380,7 +380,7 @@ class PayrollRun extends BaseModel
         $offDayDeduction = $this->calculateLeaveDeduction($deductionBase, $offDays);
         $lateRecords = $attendanceRecords
             ->filter(fn ($record) => $workingDateLookup->has($record->date->toDateString()));
-        $lateMinutes = (int) $lateRecords->sum('late_minutes');
+        $lateMinutes = (int) $lateRecords->sum(fn ($record) => $record->payableLateMinutes());
         $latePenalty = $this->calculateLatePenalty(
             $lateRecords,
             $deductionBase,
@@ -603,7 +603,7 @@ class PayrollRun extends BaseModel
         $workingDateLookup = $workingDateKeys->flip();
         $lateRecords = $attendanceRecords
             ->filter(fn ($record) => $workingDateLookup->has($record->date->toDateString()));
-        $lateMinutes = (int) $lateRecords->sum('late_minutes');
+        $lateMinutes = (int) $lateRecords->sum(fn ($record) => $record->payableLateMinutes());
         $latePenalty = $this->calculateLatePenalty($lateRecords, $deductionBase, $workingSchedule, $settings);
 
         $partialAttendanceRecords = $isBonusOnlyPayroll
