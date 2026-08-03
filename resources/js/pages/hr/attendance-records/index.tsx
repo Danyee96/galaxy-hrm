@@ -407,6 +407,12 @@ export default function AttendanceRecords() {
     getEmployeeSearchText(employee).includes(employeeSearch.toLowerCase().trim())
   );
 
+  // Early departure is display-only and must never contribute to this card.
+  const totalLateMinutes = attendanceDays.reduce(
+    (total: number, day: any) => total + (day.is_late ? Math.max(0, Number(day.late_minutes) || 0) : 0),
+    0,
+  );
+
   const selectEmployee = (employee: any) => {
     const employeeId = employee.id.toString();
     setSelectedEmployeeId(employeeId);
@@ -420,7 +426,7 @@ export default function AttendanceRecords() {
     { label: t('Absent'), value: attendanceAnalytics.absent || 0, tone: 'text-red-700' },
     { label: t('No Clock In'), value: attendanceAnalytics.no_clockin || 0, tone: 'text-orange-700' },
     { label: t('Late Days'), value: attendanceAnalytics.late_days || 0, tone: 'text-amber-700' },
-    { label: t('Total Late Time'), value: formatMinutes(attendanceAnalytics.total_late_minutes), tone: 'text-amber-700' },
+    { label: t('Total Late Time'), value: formatMinutes(totalLateMinutes), tone: 'text-amber-700' },
     { label: t('Total Hours'), value: formatHours(attendanceAnalytics.total_hours), tone: 'text-slate-700' },
     { label: t('Overtime'), value: formatHours(attendanceAnalytics.overtime_hours), tone: 'text-indigo-700' },
   ];
