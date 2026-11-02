@@ -1191,19 +1191,25 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter className={style !== 'plain' ? 'sidebar-styled' : ''} style={sidebarStyle}>
-                <div className="group-data-[collapsible=icon]:hidden flex min-h-[112px] flex-col justify-center rounded-md border border-white/25 bg-white/12 px-4 py-5 text-white shadow-sm">
-                    <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-normal text-white/70">
-                        <Building2 className="h-4 w-4 shrink-0" />
-                        <span>{t('Logged in as')}</span>
+                <div className="group-data-[collapsible=icon]:hidden rounded-[12px] border border-white/15 bg-white/[0.07] p-3 text-white">
+                    <div className="mb-2.5 text-[10px] font-medium uppercase tracking-widest text-white/55">
+                        {t('Logged in as')}
                     </div>
-                    <div className="break-words text-2xl font-extrabold leading-tight text-white">
-                        {accountName}
-                    </div>
-                    {accountEmail && (
-                        <div className="mt-2 break-words text-xs font-medium leading-snug text-white/75">
-                            {accountEmail}
+                    <div className="flex items-start gap-3">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-inset ring-white/10">
+                            <Building2 className="size-[18px] text-white/85" aria-hidden="true" />
                         </div>
-                    )}
+                        <div className="min-w-0 flex-1">
+                            <div className="break-words text-sm font-semibold leading-5 text-white">
+                                {accountName}
+                            </div>
+                            {accountEmail && (
+                                <div className="mt-0.5 truncate text-[11px] leading-4 text-white/65" title={accountEmail}>
+                                    {accountEmail}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
                 {/* <NavFooter items={footerNavItems} className="mt-auto" position={position} /> */}
                 {/* Profile menu moved to header */}
