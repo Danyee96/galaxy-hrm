@@ -31,7 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             ShareGlobalSettings::class,
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
+            // Keep optional preload headers within hosting/proxy header limits.
+            AddLinkHeadersForPreloadedAssets::using(5),
             DemoModeMiddleware::class,
         ]);
 
